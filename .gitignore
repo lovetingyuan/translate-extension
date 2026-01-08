@@ -25,7 +25,3 @@ web-ext.config.ts
 *.njsproj
 *.sln
 *.sw?
-
-# Unused components
-entrypoints/components/
-.opencode/

@@ -14,6 +14,8 @@ export class TranslationDialog {
   private service: 'google' | 'microsoft' | 'tencent' = 'google'
   private status: 'loading' | 'success' | 'error' = 'loading'
   private errorMessage: string = ''
+  private isReadingOriginal: boolean = false
+  private isReadingTranslation: boolean = false
 
   constructor() {
     // 创建一个宿主元素并附加 Shadow DOM
@@ -32,6 +34,7 @@ export class TranslationDialog {
     this.originalText = originalText
     this.translation = ''
     this.direction = this.detectDirection(originalText)
+    this.stopReading()
     this.loadSettings().then(() => {
       this.ensureInDocument()
       this.render()
@@ -139,7 +142,7 @@ export class TranslationDialog {
   private closeDialog() {
     if (!this.dialog) return
     this.abortOngoingTranslation()
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+    this.stopReading()
 
     this.dialog.style.transition = 'transform 0.3s ease-in, opacity 0.3s ease-in'
     this.dialog.style.transform = 'scale(0.8)'
@@ -188,8 +191,17 @@ export class TranslationDialog {
     }
   }
 
+  private stopReading() {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+    }
+    this.isReadingOriginal = false
+    this.isReadingTranslation = false
+  }
+
   private async performTranslation() {
     this.abortOngoingTranslation()
+    this.stopReading()
     this.status = 'loading'
     this.render()
 
@@ -240,7 +252,9 @@ export class TranslationDialog {
           .close-btn {
             background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px;
             border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
           }
+          .close-btn:hover { background: rgba(255,255,255,0.4); }
           .settings-row { display: flex; gap: 16px; margin-bottom: 16px; }
           .setting-item { flex: 1; }
           .label { font-size: 12px; opacity: 0.8; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px; }
@@ -249,7 +263,9 @@ export class TranslationDialog {
             flex: 1; border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer;
             font-size: 14px; font-weight: 500; transition: all 0.2s; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
           }
+          .direction-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); }
           .direction-btn.active { background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.5); }
+          .direction-btn.active:hover { background: rgba(255,255,255,0.4); }
           select {
             width: 100%; padding: 8px 12px; border-radius: 6px; border: none; background: rgba(255,255,255,0.2);
             color: white; font-size: 14px; cursor: pointer; outline: none;
@@ -258,17 +274,20 @@ export class TranslationDialog {
           .content-box { background: rgba(255,255,255,0.1); padding: 16px; border-radius: 8px; margin-bottom: 16px; }
           .content-box.translation { background: rgba(255,255,255,0.15); margin-bottom: 0; }
           .box-header { font-size: 12px; opacity: 0.8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-          .text-content { font-size: 16px; line-height: 1.5; user-select: text; -webkit-user-select: text; }
-          .icon-btn {
-            background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px;
-            border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
-          }
-          .footer-btns { display: flex; gap: 12px; }
-          .footer-btn { flex: 1; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
-          .btn-outline { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; }
-          .btn-primary { background: white; color: #667eea; }
-          @keyframes spin { to { transform: rotate(360deg); } }
-        </style>
+           .text-content { font-size: 16px; line-height: 1.5; user-select: text; -webkit-user-select: text; }
+            .icon-btn {
+              background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px;
+              border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+              transition: all 0.2s;
+            }
+            .icon-btn:hover:not(:disabled) { background: rgba(255,255,255,0.4); }
+            .icon-btn:active:not(:disabled) { background: rgba(255,255,255,0.5); }
+            .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+           .footer-btn { flex: 1; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+           .btn-outline { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; }
+           .btn-primary { background: white; color: #667eea; }
+           @keyframes spin { to { transform: rotate(360deg); } }
+         </style>
         <dialog id="translation-dialog">
           <div id="dialog-inner-content"></div>
         </dialog>
@@ -314,11 +333,21 @@ export class TranslationDialog {
               </div>
             </div>
             <div class="content-box">
-              <div class="box-header"><span>原文</span><button class="icon-btn" id="tts-btn">🔊</button></div>
+              <div class="box-header"><span>原文</span><button class="icon-btn" id="tts-btn">${this.isReadingOriginal ? '⏹' : '🔊'}</button></div>
               <div class="text-content">${this.escapeHtml(this.originalText)}</div>
             </div>
             <div class="content-box translation">
-              <div class="box-header"><span>翻译</span><button class="icon-btn" id="quick-copy-btn">📋</button></div>
+              <div class="box-header">
+                <span>翻译</span>
+                <div style="display: flex; gap: 8px;">
+                  <button class="icon-btn" id="tts-translation-btn" ${
+                    this.status === 'loading' || !this.translation ? 'disabled' : ''
+                  }>${this.isReadingTranslation ? '⏹' : '🔊'}</button>
+                  <button class="icon-btn" id="quick-copy-btn" ${
+                    this.status === 'loading' || !this.translation ? 'disabled' : ''
+                  }>📋</button>
+                </div>
+              </div>
               <div id="translation-body">
                 ${
                   this.status === 'loading'
@@ -386,13 +415,63 @@ export class TranslationDialog {
     if (ttsBtn)
       ttsBtn.onclick = () => {
         const synthesis = window.speechSynthesis
-        if (synthesis.speaking) synthesis.cancel()
-        else {
+        if (this.isReadingOriginal) {
+          synthesis.cancel()
+          this.isReadingOriginal = false
+          this.isReadingTranslation = false
+          this.render()
+        } else {
+          synthesis.cancel()
+          this.isReadingTranslation = false
           const u = new SpeechSynthesisUtterance(this.originalText)
           u.lang = this.direction === 'en-to-zh' ? 'en-US' : 'zh-CN'
+          u.onstart = () => {
+            this.isReadingOriginal = true
+            this.render()
+          }
+          u.onend = () => {
+            this.isReadingOriginal = false
+            this.render()
+          }
+          u.onerror = () => {
+            this.isReadingOriginal = false
+            this.render()
+          }
           synthesis.speak(u)
         }
       }
+
+    const ttsTranslationBtn = this.shadowRoot.getElementById('tts-translation-btn')
+    if (ttsTranslationBtn)
+      ttsTranslationBtn.onclick = () => {
+        if (this.status === 'loading' || !this.translation) return
+        const synthesis = window.speechSynthesis
+        if (this.isReadingTranslation) {
+          synthesis.cancel()
+          this.isReadingTranslation = false
+          this.isReadingOriginal = false
+          this.render()
+        } else {
+          synthesis.cancel()
+          this.isReadingOriginal = false
+          const u = new SpeechSynthesisUtterance(this.translation)
+          u.lang = this.direction === 'en-to-zh' ? 'zh-CN' : 'en-US'
+          u.onstart = () => {
+            this.isReadingTranslation = true
+            this.render()
+          }
+          u.onend = () => {
+            this.isReadingTranslation = false
+            this.render()
+          }
+          u.onerror = () => {
+            this.isReadingTranslation = false
+            this.render()
+          }
+          synthesis.speak(u)
+        }
+      }
+
     const copyBtn = this.shadowRoot.getElementById('copy-btn')
     const quickCopyBtn = this.shadowRoot.getElementById('quick-copy-btn')
     ;[copyBtn, quickCopyBtn].forEach(btn => {

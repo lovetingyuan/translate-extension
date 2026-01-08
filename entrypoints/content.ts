@@ -1,7 +1,7 @@
 export default defineContentScript({
   matches: ['*://*/*'],
   main() {
-    console.log('Translation content script loaded.');
+    if (import.meta.env.DEV) console.log('Translation content script loaded.');
 
     let lastSelectedText = '';
 
@@ -14,7 +14,9 @@ export default defineContentScript({
         browser.runtime.sendMessage({
           action: 'updateMenuTitle',
           text: selectedText
-        }).catch(err => console.error('发送更新菜单消息失败:', err));
+        }).catch(err => {
+          if (import.meta.env.DEV) console.error('发送更新菜单消息失败:', err);
+        });
       } else if (!selectedText && lastSelectedText) {
         setTimeout(() => {
           const newSelection = window.getSelection();
@@ -23,7 +25,9 @@ export default defineContentScript({
             lastSelectedText = '';
             browser.runtime.sendMessage({
               action: 'resetMenuTitle'
-            }).catch(err => console.error('发送重置菜单消息失败:', err));
+            }).catch(err => {
+              if (import.meta.env.DEV) console.error('发送重置菜单消息失败:', err);
+            });
           }
         }, 100);
       }
@@ -41,7 +45,7 @@ export default defineContentScript({
           btn.innerHTML = '📋';
         }, 2000);
       } catch (err) {
-        console.error('复制失败:', err);
+        if (import.meta.env.DEV) console.error('复制失败:', err);
         const textArea = document.createElement("textarea");
         textArea.value = text;
         textArea.style.position = "fixed";
@@ -59,7 +63,7 @@ export default defineContentScript({
             }, 2000);
           }
         } catch (copyErr) {
-          console.error('Fallback copy failed:', copyErr);
+          if (import.meta.env.DEV) console.error('Fallback copy failed:', copyErr);
         }
         document.body.removeChild(textArea);
       }
@@ -91,7 +95,7 @@ export default defineContentScript({
     };
 
     const showLoadingDialog = (originalText: string) => {
-      console.log('显示翻译中弹窗:', originalText);
+      if (import.meta.env.DEV) console.log('显示翻译中弹窗:', originalText);
 
       const existingDialog = document.querySelector('dialog[data-loading-dialog]');
       if (existingDialog) {
@@ -229,7 +233,7 @@ ${escapeHtml(response.translation)}</div>
                 }
               }).catch((err) => {
                 if (err.message && (err.message.includes('AbortError') || err.message.includes('message channel closed'))) return;
-                console.error('翻译请求失败:', err);
+                if (import.meta.env.DEV) console.error('翻译请求失败:', err);
                 const loadingContent = dialog.querySelector('#loading-content');
                 if (loadingContent) {
                   loadingContent.innerHTML = `
@@ -286,7 +290,7 @@ ${escapeHtml(response.translation)}</div>
               }
             }).catch((err) => {
               if (err.message && (err.message.includes('AbortError') || err.message.includes('message channel closed'))) return;
-              console.error('翻译请求失败:', err);
+              if (import.meta.env.DEV) console.error('翻译请求失败:', err);
               const loadingContent = dialog.querySelector('#loading-content');
               if (loadingContent) {
                 loadingContent.innerHTML = `
@@ -532,7 +536,7 @@ ${escapeHtml(translation)}</div>
                 if (response.success && translationDiv) translationDiv.textContent = response.translation;
                 else if (translationDiv) translationDiv.textContent = '翻译失败';
               }).catch((err) => {
-                console.error('翻译请求失败:', err);
+                if (import.meta.env.DEV) console.error('翻译请求失败:', err);
                 if (translationDiv) translationDiv.textContent = '翻译失败，请重试';
               });
             });
@@ -563,7 +567,7 @@ ${escapeHtml(translation)}</div>
               if (response.success && translationDiv) translationDiv.textContent = response.translation;
               else if (translationDiv) translationDiv.textContent = '翻译失败';
             }).catch((err) => {
-              console.error('翻译请求失败:', err);
+              if (import.meta.env.DEV) console.error('翻译请求失败:', err);
               if (translationDiv) translationDiv.textContent = '翻译失败，请重试';
             });
           });

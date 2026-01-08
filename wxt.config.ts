@@ -1,19 +1,20 @@
-import { defineConfig } from 'wxt';
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from "wxt";
+import tailwindcss from "@tailwindcss/vite";
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
-  modules: ['@wxt-dev/module-react'],
+  modules: ["@wxt-dev/module-react"],
   manifest: {
-    name: '翻译插件',
-    permissions: ['contextMenus', 'activeTab', 'scripting', 'storage'],
-    host_permissions: ['*://*/*'],
+    name: "翻译插件",
+    permissions: ["contextMenus", "activeTab", "scripting", "storage"],
+    host_permissions: ["*://*/*"],
     action: {
-      default_popup: 'popup.html',
+      default_popup: "popup.html",
     },
-    version_name: '1.0.0',
+    version_name: "1.0.0",
     content_security_policy: {
-      extension_pages: "script-src 'self' 'wasm-unsafe-eval' http://localhost:3000 http://localhost:3001; object-src 'self'",
+      extension_pages:
+        "script-src 'self' 'wasm-unsafe-eval' http://localhost:3000 http://localhost:3001; object-src 'self'",
     },
   },
   vite: () => ({

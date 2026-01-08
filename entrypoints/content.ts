@@ -1,12 +1,11 @@
-
-import { TranslationDialog } from '../components/TranslationDialog';
+import { TranslationDialog } from "./components/TranslationDialog";
 
 export default defineContentScript({
-  matches: ['*://*/*'],
+  matches: ["*://*/*"],
   main() {
-    if (import.meta.env.DEV) console.log('Translation content script loaded.');
+    if (import.meta.env.DEV) console.log("Translation content script loaded.");
 
-    let lastSelectedText = '';
+    let lastSelectedText = "";
     let dialogInstance: TranslationDialog | null = null;
 
     const handleSelectionChange = () => {
@@ -15,30 +14,34 @@ export default defineContentScript({
 
       if (selectedText && selectedText !== lastSelectedText && selectedText.length < 200) {
         lastSelectedText = selectedText;
-        browser.runtime.sendMessage({
-          action: 'updateMenuTitle',
-          text: selectedText
-        }).catch(err => {
-          if (import.meta.env.DEV) console.error('发送更新菜单消息失败:', err);
-        });
+        browser.runtime
+          .sendMessage({
+            action: "updateMenuTitle",
+            text: selectedText,
+          })
+          .catch((err) => {
+            if (import.meta.env.DEV) console.error("发送更新菜单消息失败:", err);
+          });
       } else if (!selectedText && lastSelectedText) {
         setTimeout(() => {
           const newSelection = window.getSelection();
           const newSelectedText = newSelection?.toString().trim();
           if (!newSelectedText && lastSelectedText) {
-            lastSelectedText = '';
-            browser.runtime.sendMessage({
-              action: 'resetMenuTitle'
-            }).catch(err => {
-              if (import.meta.env.DEV) console.error('发送重置菜单消息失败:', err);
-            });
+            lastSelectedText = "";
+            browser.runtime
+              .sendMessage({
+                action: "resetMenuTitle",
+              })
+              .catch((err) => {
+                if (import.meta.env.DEV) console.error("发送重置菜单消息失败:", err);
+              });
           }
         }, 100);
       }
     };
 
-    document.addEventListener('mouseup', handleSelectionChange);
-    document.addEventListener('selectionchange', handleSelectionChange);
+    document.addEventListener("mouseup", handleSelectionChange);
+    document.addEventListener("selectionchange", handleSelectionChange);
 
     /**
      * Helper to get or create the translation dialog instance
@@ -51,24 +54,24 @@ export default defineContentScript({
     };
 
     browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (import.meta.env.DEV) console.log('Content script received message:', message.action);
+      if (import.meta.env.DEV) console.log("Content script received message:", message.action);
 
       const dialog = getOrCreateDialog();
-      
-      if (message.action === 'showLoadingDialog') {
+
+      if (message.action === "showLoadingDialog") {
         dialog.showLoading(message.originalText);
-      } else if (message.action === 'updateDetailDialog') {
+      } else if (message.action === "updateDetailDialog") {
         dialog.updateSuccess(message.translation, message.direction);
-      } else if (message.action === 'updateDetailDialogError') {
+      } else if (message.action === "updateDetailDialogError") {
         dialog.updateError(message.message);
-      } else if (message.action === 'showDetailDialog') {
+      } else if (message.action === "showDetailDialog") {
         dialog.showDetail(message.originalText, message.translation, message.direction);
-      } else if (message.action === 'showErrorDialog') {
+      } else if (message.action === "showErrorDialog") {
         dialog.showError(message.message);
       }
 
       sendResponse({ success: true });
-      return false; 
+      return false;
     });
   },
 });

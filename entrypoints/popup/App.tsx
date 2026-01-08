@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-type TranslationService = 'google' | 'microsoft' | 'tencent';
+type TranslationService = "google" | "microsoft" | "tencent";
 
 interface ServiceConfig {
   id: TranslationService;
@@ -9,16 +9,16 @@ interface ServiceConfig {
 }
 
 const services: ServiceConfig[] = [
-  { id: 'google', name: 'Google', description: '谷歌翻译服务' },
-  { id: 'microsoft', name: 'Microsoft', description: '微软翻译服务' },
-  { id: 'tencent', name: 'Tencent', description: '腾讯翻译服务' },
+  { id: "google", name: "Google", description: "谷歌翻译服务" },
+  { id: "microsoft", name: "Microsoft", description: "微软翻译服务" },
+  { id: "tencent", name: "Tencent", description: "腾讯翻译服务" },
 ];
 
 function App() {
-  const [selectedService, setSelectedService] = useState<TranslationService>('google');
+  const [selectedService, setSelectedService] = useState<TranslationService>("google");
 
   useEffect(() => {
-    browser.storage.local.get('selectedService').then((result) => {
+    browser.storage.local.get("selectedService").then((result) => {
       if (result.selectedService) {
         setSelectedService(result.selectedService as TranslationService);
       }
@@ -47,7 +47,7 @@ function App() {
                 key={service.id}
                 className={`
                   card bg-base-200 hover:bg-base-300 cursor-pointer transition-all
-                  ${isSelected ? 'border-2 border-primary shadow-md' : 'border-2 border-transparent'}
+                  ${isSelected ? "border-2 border-primary shadow-md" : "border-2 border-transparent"}
                 `}
                 onClick={() => selectService(service.id)}
               >
@@ -84,7 +84,9 @@ function App() {
             ></path>
           </svg>
           <div>
-            <div className="text-[0.625rem]">点击选择一个翻译服务，如果当前服务不可用，请尝试切换到其他服务</div>
+            <div className="text-[0.625rem]">
+              点击选择一个翻译服务，如果当前服务不可用，请尝试切换到其他服务
+            </div>
           </div>
         </div>
       </div>

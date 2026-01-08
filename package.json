@@ -1,8 +1,8 @@
 {
   "name": "wxt-react-starter",
-  "description": "manifest.json description",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
+  "description": "manifest.json description",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -12,6 +12,8 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
+    "lint": "oxlint . --fix",
+    "format": "oxfmt .",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
@@ -25,6 +27,8 @@
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/module-react": "^1.1.5",
     "daisyui": "^5.5.14",
+    "oxfmt": "^0.23.0",
+    "oxlint": "^1.38.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",

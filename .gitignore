@@ -28,4 +28,4 @@ web-ext.config.ts
 
 # Unused components
 entrypoints/components/
-
+.opencode/

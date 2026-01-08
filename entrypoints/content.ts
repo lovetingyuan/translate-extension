@@ -120,6 +120,8 @@ export default defineContentScript({
           left: 50%;
           transform: translate(-50%, -50%) scale(0.8);
           opacity: 0;
+          user-select: none;
+          -webkit-user-select: none;
         `;
 
         dialog.innerHTML = `
@@ -150,7 +152,7 @@ export default defineContentScript({
 
             <div style="background: rgba(255,255,255,0.1); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
               <div style="font-size: 12px; opacity: 0.8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">原文</div>
-              <div style="font-size: 16px; line-height: 1.5;">${escapeHtml(originalText)}</div>
+              <div style="font-size: 16px; line-height: 1.5; user-select: text; -webkit-user-select: text;">${escapeHtml(originalText)}</div>
             </div>
 
             <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px;">
@@ -210,7 +212,8 @@ export default defineContentScript({
                   const loadingContent = dialog.querySelector('#loading-content');
                   if (loadingContent) {
                     loadingContent.innerHTML = `
-                      <div class="translation-text-content" style="font-size: 16px; line-height: 1.5; font-weight: 500;">${escapeHtml(response.translation)}</div>
+                      <div class="translation-text-content" style="font-size: 16px; line-height: 1.5; font-weight: 500; user-select: text; -webkit-user-select: text;">
+${escapeHtml(response.translation)}</div>
                     `;
                   }
                 } else if (!response.isAbort) {
@@ -266,7 +269,8 @@ export default defineContentScript({
                 const loadingContent = dialog.querySelector('#loading-content');
                 if (loadingContent) {
                   loadingContent.innerHTML = `
-                    <div class="translation-text-content" style="font-size: 16px; line-height: 1.5; font-weight: 500;">${escapeHtml(response.translation)}</div>
+                    <div class="translation-text-content" style="font-size: 16px; line-height: 1.5; font-weight: 500; user-select: text; -webkit-user-select: text;">
+${escapeHtml(response.translation)}</div>
                   `;
                 }
               } else if (!response.isAbort) {
@@ -440,6 +444,8 @@ export default defineContentScript({
           left: 50%;
           transform: translate(-50%, -50%) scale(0.8);
           opacity: 0;
+          user-select: none;
+          -webkit-user-select: none;
         `;
 
         dialog.innerHTML = `
@@ -473,7 +479,7 @@ export default defineContentScript({
                 <span>原文</span>
                 <button id="tts-btn" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;" title="朗读原文">🔊</button>
               </div>
-              <div style="font-size: 16px; line-height: 1.5;">${escapeHtml(originalText)}</div>
+              <div style="font-size: 16px; line-height: 1.5; user-select: text; -webkit-user-select: text;">${escapeHtml(originalText)}</div>
             </div>
 
             <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
@@ -481,7 +487,8 @@ export default defineContentScript({
                 <span>翻译</span>
                 <button id="quick-copy-btn" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="复制翻译结果">📋</button>
               </div>
-              <div class="translation-text-content" style="font-size: 16px; line-height: 1.5; font-weight: 500;">${escapeHtml(translation)}</div>
+              <div class="translation-text-content" style="font-size: 16px; line-height: 1.5; font-weight: 500; user-select: text; -webkit-user-select: text;">
+${escapeHtml(translation)}</div>
             </div>
 
             <div style="display: flex; gap: 12px;">
@@ -652,7 +659,8 @@ export default defineContentScript({
           const loadingContent = loadingDialog.querySelector('#loading-content');
           if (loadingContent) {
             loadingContent.innerHTML = `
-              <div class="translation-text-content" style="font-size: 16px; line-height: 1.5; font-weight: 500;">${escapeHtml(message.translation)}</div>
+              <div class="translation-text-content" style="font-size: 16px; line-height: 1.5; font-weight: 500; user-select: text; -webkit-user-select: text;">
+${escapeHtml(message.translation)}</div>
             `;
           }
           if (message.direction) updateDirectionButtons(loadingDialog, message.direction);

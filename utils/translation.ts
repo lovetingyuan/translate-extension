@@ -313,10 +313,7 @@ export const translateText = async (
   const signal = currentAbortController.signal;
 
   try {
-    const result = await browser.storage.local.get([
-      "selectedService",
-      "translationDirection",
-    ]);
+    const result = await browser.storage.local.get(["selectedService", "translationDirection"]);
     const selectedService =
       service ||
       (result.selectedService as "google" | "microsoft" | "tencent" | "openrouter") ||

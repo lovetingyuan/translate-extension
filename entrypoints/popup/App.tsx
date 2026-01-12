@@ -137,12 +137,6 @@ function App() {
     window.speechSynthesis.speak(utterance)
   }
 
-  const clearInput = () => {
-    setInputText('')
-    setTranslation('')
-    setError('')
-  }
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault()

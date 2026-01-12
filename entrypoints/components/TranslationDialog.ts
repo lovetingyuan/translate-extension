@@ -503,10 +503,8 @@ export class TranslationDialog {
     if (youdaoBtn)
       youdaoBtn.onclick = () => {
         window.open(
-          `https://www.youdao.com/result?word=${encodeURIComponent(
-            this.originalText
-          )}&lang=en`,
-          "_blank"
+          `https://www.youdao.com/result?word=${encodeURIComponent(this.originalText)}&lang=en`,
+          "_blank",
         );
       };
 

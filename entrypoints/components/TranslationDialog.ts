@@ -410,9 +410,15 @@ export class TranslationDialog {
               </div>
             </div>
             <div class="content-box original">
-              <div class="box-header"><span>原文</span><button class="icon-btn" id="tts-btn">${
-                this.isReadingOriginal ? "⏹" : "🔊"
-              }</button></div>
+              <div class="box-header">
+                <span>原文</span>
+                <div style="display: flex; gap: 8px;">
+                  <button class="icon-btn" id="tts-btn">${
+                    this.isReadingOriginal ? "⏹" : "🔊"
+                  }</button>
+                  <button class="icon-btn" id="youdao-btn" title="在有道词典中查看">🔍</button>
+                </div>
+              </div>
               <div id="original-text-content" class="text-content ${
                 this.isOriginalExpanded ? "scrollable" : "collapsed"
               }">${this.escapeHtml(this.originalText)}</div>
@@ -499,6 +505,17 @@ export class TranslationDialog {
         browser.storage.local.set({ selectedService: this.service });
         this.performTranslation();
       };
+    const youdaoBtn = this.shadowRoot.getElementById("youdao-btn");
+    if (youdaoBtn)
+      youdaoBtn.onclick = () => {
+        window.open(
+          `https://www.youdao.com/result?word=${encodeURIComponent(
+            this.originalText
+          )}&lang=en`,
+          "_blank"
+        );
+      };
+
     const ttsBtn = this.shadowRoot.getElementById("tts-btn");
     if (ttsBtn)
       ttsBtn.onclick = () => {

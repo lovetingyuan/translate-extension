@@ -1,5 +1,3 @@
-declare const __APP_VERSION__: string;
-
 function App() {
   return (
     <div className="card w-full min-h-48 bg-base-100 text-base-content shadow-xl relative">
@@ -36,7 +34,7 @@ function App() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App

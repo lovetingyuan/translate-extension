@@ -1,5 +1,7 @@
 # Translate Extension
 
+![Vibe Coding](https://img.shields.io/badge/vibe-coding-blueviolet)
+
 A modern, bidirectional Chinese-English translation browser extension built with the [WXT Framework](https://wxt.dev/).
 
 ## 🌟 Features

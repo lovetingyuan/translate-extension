@@ -1,241 +1,246 @@
-import { browser } from 'wxt/browser'
+import { browser } from "wxt/browser";
 
 /**
  * TranslationDialog Class
  * Encapsulates the translation result UI and interactions using Shadow DOM.
  */
 export class TranslationDialog {
-  private container: HTMLElement
-  private shadowRoot: ShadowRoot
-  private dialog: HTMLDialogElement | null = null
-  private originalText: string = ''
-  private translation: string = ''
-  private direction: 'en-to-zh' | 'zh-to-en' = 'en-to-zh'
-  private service: 'google' | 'microsoft' | 'tencent' = 'google'
-  private status: 'loading' | 'success' | 'error' = 'loading'
-  private errorMessage: string = ''
-  private isReadingOriginal: boolean = false
-  private isReadingTranslation: boolean = false
-  private isOriginalExpanded: boolean = false
+  private container: HTMLElement;
+  private shadowRoot: ShadowRoot;
+  private dialog: HTMLDialogElement | null = null;
+  private originalText: string = "";
+  private translation: string = "";
+  private direction: "en-to-zh" | "zh-to-en" = "en-to-zh";
+  private service: "google" | "microsoft" | "tencent" | "openrouter" = "google";
+  private status: "loading" | "success" | "error" = "loading";
+  private errorMessage: string = "";
+  private isReadingOriginal: boolean = false;
+  private isReadingTranslation: boolean = false;
+  private isOriginalExpanded: boolean = false;
+  private closingTimer: number | null = null;
+  public onClose?: () => void;
 
   constructor() {
     // 创建一个宿主元素并附加 Shadow DOM
-    this.container = document.createElement('div')
-    this.container.id = 'translation-extension-root'
-    this.shadowRoot = this.container.attachShadow({ mode: 'open' })
-    document.body.appendChild(this.container)
-    this.render()
+    this.container = document.createElement("div");
+    this.container.id = "translation-extension-root";
+    this.shadowRoot = this.container.attachShadow({ mode: "open" });
+    document.body.appendChild(this.container);
+    this.render();
   }
 
   /**
    * Initialize or update the dialog with loading state
    */
   public showLoading(originalText: string) {
-    this.status = 'loading'
-    this.originalText = originalText
-    this.translation = ''
-    this.isOriginalExpanded = false
-    this.direction = this.detectDirection(originalText)
-    this.stopReading()
+    this.status = "loading";
+    this.originalText = originalText;
+    this.translation = "";
+    this.isOriginalExpanded = false;
+    this.direction = this.detectDirection(originalText);
+    this.stopReading();
     this.loadSettings().then(() => {
-      this.ensureInDocument()
-      this.render()
-      if (this.dialog && !this.dialog.open) {
-        this.dialog.showModal()
-        this.animateIn()
-      }
-    })
+      this.ensureInDocument();
+      this.render();
+      this.presentDialog();
+    });
   }
 
-  public updateSuccess(translation: string, direction?: 'en-to-zh' | 'zh-to-en') {
-    this.status = 'success'
-    this.translation = translation
-    if (direction) this.direction = direction
-    this.ensureInDocument()
-    this.render()
-    if (this.dialog && !this.dialog.open) {
-      this.dialog.showModal()
-      this.animateIn()
-    }
+  public updateSuccess(translation: string, direction?: "en-to-zh" | "zh-to-en") {
+    this.status = "success";
+    this.translation = translation;
+    if (direction) this.direction = direction;
+    this.ensureInDocument();
+    this.render();
+    this.presentDialog();
   }
 
   public updateError(message: string) {
-    this.status = 'error'
-    this.errorMessage = message
-    this.ensureInDocument()
-    this.render()
-    if (this.dialog && !this.dialog.open) {
-      this.dialog.showModal()
-      this.animateIn()
-    }
+    this.status = "error";
+    this.errorMessage = message;
+    this.ensureInDocument();
+    this.render();
+    this.presentDialog();
   }
 
   public showError(message: string) {
-    this.status = 'error'
-    this.errorMessage = message
-    this.translation = ''
-    this.ensureInDocument()
-    this.render()
-    if (this.dialog && !this.dialog.open) {
-      this.dialog.showModal()
-      this.animateIn()
-    }
+    this.status = "error";
+    this.errorMessage = message;
+    this.translation = "";
+    this.ensureInDocument();
+    this.render();
+    this.presentDialog();
   }
 
   public showDetail(
     originalText: string,
     translation: string,
-    direction?: 'en-to-zh' | 'zh-to-en'
+    direction?: "en-to-zh" | "zh-to-en",
   ) {
-    this.status = 'success'
-    this.originalText = originalText
-    this.translation = translation
-    this.isOriginalExpanded = false
-    this.direction = direction || this.detectDirection(originalText)
+    this.status = "success";
+    this.originalText = originalText;
+    this.translation = translation;
+    this.isOriginalExpanded = false;
+    this.direction = direction || this.detectDirection(originalText);
     this.loadSettings().then(() => {
-      this.ensureInDocument()
-      this.render()
-      if (this.dialog && !this.dialog.open) {
-        this.dialog.showModal()
-        this.animateIn()
+      this.ensureInDocument();
+      this.render();
+      this.presentDialog();
+    });
+  }
+
+  private presentDialog() {
+    const isClosing = this.closingTimer !== null;
+    if (this.closingTimer) {
+      clearTimeout(this.closingTimer);
+      this.closingTimer = null;
+    }
+    if (this.dialog) {
+      if (!this.dialog.open) {
+        this.dialog.showModal();
+        this.animateIn();
+      } else if (isClosing) {
+        this.animateIn();
       }
-    })
+    }
   }
 
   private async loadSettings() {
     try {
-      const result = await browser.storage.local.get(['selectedService'])
-      this.service = (result.selectedService as 'google' | 'microsoft' | 'tencent') || 'google'
+      const result = await browser.storage.local.get(["selectedService"]);
+      this.service =
+        (result.selectedService as "google" | "microsoft" | "tencent" | "openrouter") || "google";
     } catch (err) {
-      if (import.meta.env.DEV) console.error('Failed to load settings:', err)
+      if (import.meta.env.DEV) console.error("Failed to load settings:", err);
     }
   }
 
-  private detectDirection(text: string): 'en-to-zh' | 'zh-to-en' {
-    const englishCount = (text.match(/[a-zA-Z]/g) || []).length
-    return englishCount > 0 ? 'en-to-zh' : 'zh-to-en'
+  private detectDirection(text: string): "en-to-zh" | "zh-to-en" {
+    const englishCount = (text.match(/[a-zA-Z]/g) || []).length;
+    return englishCount > 0 ? "en-to-zh" : "zh-to-en";
   }
 
   private escapeHtml(text: string): string {
-    const div = document.createElement('div')
-    div.textContent = text
-    return div.innerHTML
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   private animateIn() {
-    if (!this.dialog) return
-    this.dialog.style.transform = 'scale(0.8)'
-    this.dialog.style.opacity = '0'
+    if (!this.dialog) return;
+    this.dialog.style.transform = "scale(0.8)";
+    this.dialog.style.opacity = "0";
     setTimeout(() => {
       if (this.dialog) {
         this.dialog.style.transition =
-          'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out'
-        this.dialog.style.transform = 'scale(1)'
-        this.dialog.style.opacity = '1'
+          "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out";
+        this.dialog.style.transform = "scale(1)";
+        this.dialog.style.opacity = "1";
       }
-    }, 10)
+    }, 10);
   }
 
   private ensureInDocument() {
     if (!document.body.contains(this.container)) {
-      document.body.appendChild(this.container)
+      document.body.appendChild(this.container);
     }
   }
 
   private closeDialog() {
-    if (!this.dialog) return
-    this.abortOngoingTranslation()
-    this.stopReading()
+    if (!this.dialog) return;
+    this.abortOngoingTranslation();
+    this.stopReading();
 
-    this.dialog.style.transition = 'transform 0.3s ease-in, opacity 0.3s ease-in'
-    this.dialog.style.transform = 'scale(0.8)'
-    this.dialog.style.opacity = '0'
-    setTimeout(() => {
-      this.dialog?.close()
-      // 不要移除 container，只移除 innerHTML 或让它保持原样
-      // this.container.remove();
-    }, 300)
+    if (this.closingTimer) {
+      clearTimeout(this.closingTimer);
+    }
+
+    this.dialog.style.transition = "transform 0.3s ease-in, opacity 0.3s ease-in";
+    this.dialog.style.transform = "scale(0.8)";
+    this.dialog.style.opacity = "0";
+    this.closingTimer = window.setTimeout(() => {
+      this.dialog?.close();
+      this.closingTimer = null;
+      this.onClose?.();
+    }, 300);
   }
 
   private abortOngoingTranslation() {
-    browser.runtime.sendMessage({ action: 'abortTranslation' }).catch(() => {})
+    browser.runtime.sendMessage({ action: "abortTranslation" }).catch(() => {});
   }
 
   private async copyToClipboard(text: string, btn: HTMLButtonElement) {
-    if (!text) return
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(text)
-      const originalInner = btn.innerHTML
-      btn.innerHTML = '✅'
+      await navigator.clipboard.writeText(text);
+      const originalInner = btn.innerHTML;
+      btn.innerHTML = "✅";
       setTimeout(() => {
-        btn.innerHTML = originalInner
-      }, 2000)
-    } catch (err) {
-      const textArea = document.createElement('textarea')
-      textArea.value = text
-      textArea.style.position = 'fixed'
-      textArea.style.left = '-9999px'
-      textArea.style.top = '0'
-      this.shadowRoot.appendChild(textArea)
-      textArea.focus()
-      textArea.select()
+        btn.innerHTML = originalInner;
+      }, 2000);
+    } catch {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      this.shadowRoot.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
       try {
-        if (document.execCommand('copy')) {
-          const originalInner = btn.innerHTML
-          btn.innerHTML = '✅'
+        if (document.execCommand("copy")) {
+          const originalInner = btn.innerHTML;
+          btn.innerHTML = "✅";
           setTimeout(() => {
-            btn.innerHTML = originalInner
-          }, 2000)
+            btn.innerHTML = originalInner;
+          }, 2000);
         }
       } catch (copyErr) {
-        if (import.meta.env.DEV) console.error('Fallback copy failed:', copyErr)
+        if (import.meta.env.DEV) console.error("Fallback copy failed:", copyErr);
       }
-      this.shadowRoot.removeChild(textArea)
+      this.shadowRoot.removeChild(textArea);
     }
   }
 
   private stopReading() {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
-    this.isReadingOriginal = false
-    this.isReadingTranslation = false
+    this.isReadingOriginal = false;
+    this.isReadingTranslation = false;
   }
 
   private async performTranslation() {
-    this.abortOngoingTranslation()
-    this.stopReading()
-    this.status = 'loading'
-    this.render()
+    this.abortOngoingTranslation();
+    this.stopReading();
+    this.status = "loading";
+    this.render();
 
     try {
       const response = await browser.runtime.sendMessage({
-        action: 'translate',
+        action: "translate",
         text: this.originalText,
         service: this.service,
         direction: this.direction,
-      })
+      });
 
       if (response.success) {
-        this.updateSuccess(response.translation, this.direction)
+        this.updateSuccess(response.translation, this.direction);
       } else if (!response.isAbort) {
-        this.updateError(response.error || '翻译失败')
+        this.updateError(response.error || "翻译失败");
       }
     } catch (err: any) {
       if (
         err.message &&
-        (err.message.includes('AbortError') || err.message.includes('message channel closed'))
+        (err.message.includes("AbortError") || err.message.includes("message channel closed"))
       )
-        return
-      this.updateError('翻译失败，请重试')
+        return;
+      this.updateError("翻译失败，请重试");
     }
   }
 
   private render() {
-    const isError = this.status === 'error' && !this.translation
-    const bgGradient = isError
-      ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%)'
-      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    const bgColor = "#222222";
 
     if (!this.dialog) {
       this.shadowRoot.innerHTML = `
@@ -247,6 +252,8 @@ export class TranslationDialog {
             position: fixed; margin: auto; inset: 0;
             user-select: none; -webkit-user-select: none; outline: none;
             max-height: 85vh; overflow: hidden !important;
+          }
+          dialog[open] {
             display: flex; flex-direction: column;
           }
           dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
@@ -283,7 +290,7 @@ export class TranslationDialog {
             color: white; font-size: 14px; cursor: pointer; outline: none;
             user-select: none;
           }
-          select option { background: #667eea; color: white; }
+          select option { background: #333; color: white; }
           .content-box {
             background: rgba(255,255,255,0.1);
             padding: 16px;
@@ -358,58 +365,61 @@ export class TranslationDialog {
         <dialog id="translation-dialog">
           <div id="dialog-inner-content"></div>
         </dialog>
-      `
-      this.dialog = this.shadowRoot.getElementById('translation-dialog') as HTMLDialogElement
+      `;
+      this.dialog = this.shadowRoot.getElementById("translation-dialog") as HTMLDialogElement;
     }
 
-    this.dialog.style.background = bgGradient
-    const innerContent = this.shadowRoot.getElementById('dialog-inner-content')
+    this.dialog.style.background = bgColor;
+    const innerContent = this.shadowRoot.getElementById("dialog-inner-content");
     if (innerContent) {
       innerContent.innerHTML = `
         <div class="container">
           <div class="header">
-            <h3>${this.status === 'error' && !this.translation ? '翻译失败' : '翻译结果'}</h3>
+            <h3>${this.status === "error" && !this.translation ? "翻译失败" : "翻译结果"}</h3>
             <button class="close-btn" id="close-btn">×</button>
           </div>
           ${
-            this.status !== 'error' || this.translation
+            this.status !== "error" || this.translation
               ? `
             <div class="settings-row">
               <div class="setting-item">
                 <div class="direction-btns">
                   <button class="direction-btn ${
-                    this.direction === 'zh-to-en' ? 'active' : ''
+                    this.direction === "zh-to-en" ? "active" : ""
                   }" data-direction="zh-to-en">中译英</button>
                   <button class="direction-btn ${
-                    this.direction === 'en-to-zh' ? 'active' : ''
+                    this.direction === "en-to-zh" ? "active" : ""
                   }" data-direction="en-to-zh">英译中</button>
                 </div>
               </div>
               <div class="setting-item" style="width: 50%;">
                 <select id="service-select">
                   <option value="google" ${
-                    this.service === 'google' ? 'selected' : ''
+                    this.service === "google" ? "selected" : ""
                   }>Google 翻译</option>
                   <option value="microsoft" ${
-                    this.service === 'microsoft' ? 'selected' : ''
+                    this.service === "microsoft" ? "selected" : ""
                   }>Microsoft 翻译</option>
                   <option value="tencent" ${
-                    this.service === 'tencent' ? 'selected' : ''
+                    this.service === "tencent" ? "selected" : ""
                   }>腾讯翻译</option>
+                  <option value="openrouter" ${
+                    this.service === "openrouter" ? "selected" : ""
+                  }>OpenRouter</option>
                 </select>
               </div>
             </div>
             <div class="content-box original">
               <div class="box-header"><span>原文</span><button class="icon-btn" id="tts-btn">${
-                this.isReadingOriginal ? '⏹' : '🔊'
+                this.isReadingOriginal ? "⏹" : "🔊"
               }</button></div>
               <div id="original-text-content" class="text-content ${
-                this.isOriginalExpanded ? 'scrollable' : 'collapsed'
+                this.isOriginalExpanded ? "scrollable" : "collapsed"
               }">${this.escapeHtml(this.originalText)}</div>
               ${
                 !this.isOriginalExpanded
                   ? '<button id="view-all-btn" class="view-all-btn">查看全部</button>'
-                  : ''
+                  : ""
               }
             </div>
             <div class="content-box translation">
@@ -417,27 +427,27 @@ export class TranslationDialog {
                 <span>翻译</span>
                 <div style="display: flex; gap: 8px;">
                   <button class="icon-btn" id="tts-translation-btn" ${
-                    this.status === 'loading' || !this.translation ? 'disabled' : ''
-                  }>${this.isReadingTranslation ? '⏹' : '🔊'}</button>
+                    this.status === "loading" || !this.translation ? "disabled" : ""
+                  }>${this.isReadingTranslation ? "⏹" : "🔊"}</button>
                   <button class="icon-btn" id="quick-copy-btn" ${
-                    this.status === 'loading' || !this.translation ? 'disabled' : ''
+                    this.status === "loading" || !this.translation ? "disabled" : ""
                   }>📋</button>
                 </div>
               </div>
               <div id="translation-body">
                 ${
-                  this.status === 'loading'
+                  this.status === "loading"
                     ? `
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
                     <span>正在翻译...</span>
                   </div>
                 `
-                    : this.status === 'success'
-                    ? `
+                    : this.status === "success"
+                      ? `
                   <div class="text-content">${this.escapeHtml(this.translation)}</div>
                 `
-                    : `
+                      : `
                   <div style="color: #ff6b6b; display: flex; align-items: center; gap: 8px;">
                     <span>✕</span><span>${this.escapeHtml(this.errorMessage)}</span>
                   </div>
@@ -455,121 +465,123 @@ export class TranslationDialog {
           `
           }
         </div>
-      `
+      `;
     }
-    this.setupEventListeners()
+    this.setupEventListeners();
   }
 
   private setupEventListeners() {
-    if (!this.dialog) return
-    this.shadowRoot.querySelectorAll('#close-btn, #close-btn-2, #close-btn-error').forEach(btn => {
-      btn.addEventListener('click', () => this.closeDialog())
-    })
-    this.dialog.onclick = e => {
-      if (e.target === this.dialog) this.closeDialog()
-    }
+    if (!this.dialog) return;
+    this.shadowRoot
+      .querySelectorAll("#close-btn, #close-btn-2, #close-btn-error")
+      .forEach((btn) => {
+        btn.addEventListener("click", () => this.closeDialog());
+      });
+    this.dialog.onclick = (e) => {
+      if (e.target === this.dialog) this.closeDialog();
+    };
     this.dialog.onclose = () => {
-      this.closeDialog()
-    }
-    this.shadowRoot.querySelectorAll('.direction-btn').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const newDir = (e.currentTarget as HTMLElement).getAttribute('data-direction') as any
+      this.closeDialog();
+    };
+    this.shadowRoot.querySelectorAll(".direction-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const newDir = (e.currentTarget as HTMLElement).getAttribute("data-direction") as any;
         if (newDir !== this.direction) {
-          this.direction = newDir
-          this.performTranslation()
+          this.direction = newDir;
+          this.performTranslation();
         }
-      })
-    })
-    const select = this.shadowRoot.getElementById('service-select') as HTMLSelectElement
+      });
+    });
+    const select = this.shadowRoot.getElementById("service-select") as HTMLSelectElement;
     if (select)
-      select.onchange = e => {
-        this.service = (e.target as any).value
-        browser.storage.local.set({ selectedService: this.service })
-        this.performTranslation()
-      }
-    const ttsBtn = this.shadowRoot.getElementById('tts-btn')
+      select.onchange = (e) => {
+        this.service = (e.target as any).value;
+        browser.storage.local.set({ selectedService: this.service });
+        this.performTranslation();
+      };
+    const ttsBtn = this.shadowRoot.getElementById("tts-btn");
     if (ttsBtn)
       ttsBtn.onclick = () => {
-        const synthesis = window.speechSynthesis
+        const synthesis = window.speechSynthesis;
         if (this.isReadingOriginal) {
-          synthesis.cancel()
-          this.isReadingOriginal = false
-          this.isReadingTranslation = false
-          this.render()
+          synthesis.cancel();
+          this.isReadingOriginal = false;
+          this.isReadingTranslation = false;
+          this.render();
         } else {
-          synthesis.cancel()
-          this.isReadingTranslation = false
-          const u = new SpeechSynthesisUtterance(this.originalText)
-          u.lang = this.direction === 'en-to-zh' ? 'en-US' : 'zh-CN'
+          synthesis.cancel();
+          this.isReadingTranslation = false;
+          const u = new SpeechSynthesisUtterance(this.originalText);
+          u.lang = this.direction === "en-to-zh" ? "en-US" : "zh-CN";
           u.onstart = () => {
-            this.isReadingOriginal = true
-            this.render()
-          }
+            this.isReadingOriginal = true;
+            this.render();
+          };
           u.onend = () => {
-            this.isReadingOriginal = false
-            this.render()
-          }
+            this.isReadingOriginal = false;
+            this.render();
+          };
           u.onerror = () => {
-            this.isReadingOriginal = false
-            this.render()
-          }
-          synthesis.speak(u)
+            this.isReadingOriginal = false;
+            this.render();
+          };
+          synthesis.speak(u);
         }
-      }
+      };
 
-    const ttsTranslationBtn = this.shadowRoot.getElementById('tts-translation-btn')
+    const ttsTranslationBtn = this.shadowRoot.getElementById("tts-translation-btn");
     if (ttsTranslationBtn)
       ttsTranslationBtn.onclick = () => {
-        if (this.status === 'loading' || !this.translation) return
-        const synthesis = window.speechSynthesis
+        if (this.status === "loading" || !this.translation) return;
+        const synthesis = window.speechSynthesis;
         if (this.isReadingTranslation) {
-          synthesis.cancel()
-          this.isReadingTranslation = false
-          this.isReadingOriginal = false
-          this.render()
+          synthesis.cancel();
+          this.isReadingTranslation = false;
+          this.isReadingOriginal = false;
+          this.render();
         } else {
-          synthesis.cancel()
-          this.isReadingOriginal = false
-          const u = new SpeechSynthesisUtterance(this.translation)
-          u.lang = this.direction === 'en-to-zh' ? 'zh-CN' : 'en-US'
+          synthesis.cancel();
+          this.isReadingOriginal = false;
+          const u = new SpeechSynthesisUtterance(this.translation);
+          u.lang = this.direction === "en-to-zh" ? "zh-CN" : "en-US";
           u.onstart = () => {
-            this.isReadingTranslation = true
-            this.render()
-          }
+            this.isReadingTranslation = true;
+            this.render();
+          };
           u.onend = () => {
-            this.isReadingTranslation = false
-            this.render()
-          }
+            this.isReadingTranslation = false;
+            this.render();
+          };
           u.onerror = () => {
-            this.isReadingTranslation = false
-            this.render()
-          }
-          synthesis.speak(u)
+            this.isReadingTranslation = false;
+            this.render();
+          };
+          synthesis.speak(u);
         }
-      }
+      };
 
-    const copyBtn = this.shadowRoot.getElementById('copy-btn')
-    const quickCopyBtn = this.shadowRoot.getElementById('quick-copy-btn')
-    ;[copyBtn, quickCopyBtn].forEach(btn => {
-      if (btn) btn.onclick = () => this.copyToClipboard(this.translation, btn as HTMLButtonElement)
-    })
+    const copyBtn = this.shadowRoot.getElementById("copy-btn");
+    const quickCopyBtn = this.shadowRoot.getElementById("quick-copy-btn");
+    [copyBtn, quickCopyBtn].forEach((btn) => {
+      if (btn) btn.onclick = () => this.copyToClipboard(this.translation, btn as HTMLButtonElement);
+    });
 
     // View All button logic
-    const originalTextEl = this.shadowRoot.getElementById('original-text-content')
-    const viewAllBtn = this.shadowRoot.getElementById('view-all-btn')
+    const originalTextEl = this.shadowRoot.getElementById("original-text-content");
+    const viewAllBtn = this.shadowRoot.getElementById("view-all-btn");
 
     if (originalTextEl && viewAllBtn && !this.isOriginalExpanded) {
       // Check if text exceeds 4 lines (approximate)
       if (originalTextEl.scrollHeight > originalTextEl.clientHeight) {
-        viewAllBtn.style.display = 'block'
+        viewAllBtn.style.display = "block";
       } else {
-        viewAllBtn.style.display = 'none'
+        viewAllBtn.style.display = "none";
       }
 
       viewAllBtn.onclick = () => {
-        this.isOriginalExpanded = true
-        this.render()
-      }
+        this.isOriginalExpanded = true;
+        this.render();
+      };
     }
   }
 }

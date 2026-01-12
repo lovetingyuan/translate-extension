@@ -88,4 +88,4 @@
 - 在生成代码时，优先提供**完整的代码块**而不是片段，以便于复制粘贴。
 - 修改现有文件时，请先阅读该文件的现有逻辑，确保上下文连贯。
 - 如果遇到 WXT 特有的配置问题（如 HMR 热更新、Manifest 生成），请参考 WXT 官方最佳实践。
-- 在每轮回答结束后，输出一条 git commit message，用来描述本次任务所做的更改，遵循 Conventional Commits 规范
+- **在每轮回答结束后，输出一条 git commit message，用来描述本次任务所做的更改，遵循 Conventional Commits 规范**

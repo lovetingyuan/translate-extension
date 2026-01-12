@@ -1,0 +1,368 @@
+import { logger } from "./logger";
+
+const parseMSToken = (token: string): number => {
+  try {
+    const payload = token.split(".")[1];
+    const decoded = JSON.parse(atob(payload));
+    return decoded.exp || 0;
+  } catch (err) {
+    logger.error("parseMSToken error:", err);
+    return 0;
+  }
+};
+
+let msTokenCache: { token: string; expiresAt: number } | null = null;
+const EXPIRATION_BUFFER_MS = 1000;
+
+const getMicrosoftToken = async (): Promise<string> => {
+  const now = Date.now();
+
+  if (msTokenCache && msTokenCache.expiresAt > now + EXPIRATION_BUFFER_MS) {
+    logger.log("使用缓存的Microsoft token");
+    return msTokenCache.token;
+  }
+
+  const storageResult = await browser.storage.local.get("msAuthToken");
+  const storageToken = storageResult.msAuthToken as string | undefined;
+
+  if (storageToken) {
+    const storageExp = parseMSToken(storageToken);
+    const storageExpiresAt = storageExp * 1000;
+
+    if (storageExpiresAt > now + EXPIRATION_BUFFER_MS) {
+      logger.log("使用storage缓存的Microsoft token");
+      msTokenCache = { token: storageToken, expiresAt: storageExpiresAt };
+      return storageToken;
+    }
+  }
+
+  logger.log("获取新的Microsoft token");
+  const response = await fetch("https://edge.microsoft.com/translate/auth");
+
+  if (!response.ok) {
+    throw new Error(`Microsoft token请求失败: ${response.status}`);
+  }
+
+  const token = await response.text();
+  const exp = parseMSToken(token);
+  const expiresAt = exp * 1000;
+
+  await browser.storage.local.set({ msAuthToken: token });
+  msTokenCache = { token, expiresAt };
+
+  logger.log("Microsoft token获取成功，过期时间:", new Date(expiresAt));
+  return token;
+};
+
+const translateWithGoogle = async (
+  text: string,
+  signal?: AbortSignal,
+  direction: "en-to-zh" | "zh-to-en" = "en-to-zh",
+): Promise<string> => {
+  const url = "https://translate-pa.googleapis.com/v1/translateHtml";
+
+  logger.log("正在请求Google翻译API:", url);
+
+  const [sourceLang, targetLang] = direction === "en-to-zh" ? ["en", "zh-CN"] : ["zh-CN", "en"];
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json+protobuf",
+      "X-Goog-API-Key": "AIzaSyATBXajvzQLTDHEQbcpq0Ihe0vWDHmO520",
+      "user-agent": navigator.userAgent,
+      accept: "*/*",
+      "accept-encoding": "gzip, deflate, br",
+      "accept-language": "en,zh-CN;q=0.9,zh;q=0.8,ja;q=0.7,en-US;q=0.6",
+    },
+    body: JSON.stringify([[[text], sourceLang, targetLang], "te"]),
+    signal,
+  });
+
+  logger.log("GoogleHtml翻译API响应状态:", response.status, response.statusText);
+
+  if (!response.ok) {
+    throw new Error(`GoogleHtml翻译请求失败: ${response.status}`);
+  }
+
+  const data = await response.json();
+  logger.log("GoogleHtml翻译API返回数据类型:", typeof data);
+  logger.log("GoogleHtml翻译API返回数据长度:", Array.isArray(data) ? data.length : "N/A");
+  logger.log("GoogleHtml翻译API返回数据:", JSON.stringify(data, null, 2));
+
+  if (Array.isArray(data) && data.length > 0) {
+    if (typeof data[0] === "number") {
+      throw new Error(`GoogleHtml翻译API错误 (${data[0]}): ${data[1] || "未知错误"}`);
+    }
+
+    if (Array.isArray(data[0]) && data[0].length > 0 && typeof data[0][0] === "string") {
+      const translation = data[0][0];
+      logger.log("GoogleHtml翻译成功:", translation);
+      return translation;
+    }
+
+    if (typeof data[0] === "string") {
+      const translation = data[0];
+      logger.log("GoogleHtml翻译成功:", translation);
+      return translation;
+    }
+  }
+
+  throw new Error("GoogleHtml翻译返回数据格式错误");
+};
+
+const translateWithMicrosoft = async (
+  text: string,
+  signal?: AbortSignal,
+  direction: "en-to-zh" | "zh-to-en" = "en-to-zh",
+): Promise<string> => {
+  const [fromLang, toLang] = direction === "en-to-zh" ? ["", "zh-Hans"] : ["zh-Hans", "en"];
+  const url = `https://api-edge.cognitive.microsofttranslator.com/translate?api-version=3.0&from=${fromLang}&to=${toLang}`;
+
+  logger.log("正在请求Microsoft翻译API:", url);
+
+  const token = await getMicrosoftToken();
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      accept: "*/*",
+      "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+      authorization: `Bearer ${token}`,
+      "cache-control": "no-cache",
+      "content-type": "application/json",
+      pragma: "no-cache",
+    },
+    body: JSON.stringify([{ Text: text }]),
+    signal,
+  });
+
+  logger.log("Microsoft翻译API响应状态:", response.status, response.statusText);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    logger.error("Microsoft翻译API错误响应:", errorText);
+    throw new Error(`Microsoft翻译请求失败: ${response.status}`);
+  }
+
+  const data = await response.json();
+  logger.log("Microsoft翻译API返回数据:", data);
+
+  if (
+    Array.isArray(data) &&
+    data.length > 0 &&
+    data[0]?.translations &&
+    data[0].translations.length > 0
+  ) {
+    const translation = data[0].translations[0].text;
+    if (typeof translation === "string") {
+      logger.log("Microsoft翻译成功:", translation);
+      return translation;
+    }
+  }
+
+  throw new Error("Microsoft翻译返回数据格式错误");
+};
+
+const translateWithTencent = async (
+  text: string,
+  signal?: AbortSignal,
+  direction: "en-to-zh" | "zh-to-en" = "en-to-zh",
+): Promise<string> => {
+  const url = "https://transmart.qq.com/api/imt";
+
+  logger.log("正在请求Tencent翻译API:", url);
+
+  const [sourceLang, targetLang] = direction === "en-to-zh" ? ["en", "zh"] : ["zh", "en"];
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": navigator.userAgent,
+      Referer: "https://transmart.qq.com/zh-CN/index",
+    },
+    body: JSON.stringify({
+      header: {
+        fn: "auto_translation",
+        client_key:
+          "browser-chrome-110.0.0-Mac OS-df4bd4c5-a65d-44b2-a40f-42f34f3535f2-1677486696487",
+      },
+      type: "plain",
+      model_category: "normal",
+      source: {
+        text_list: [text],
+        lang: sourceLang,
+      },
+      target: {
+        lang: targetLang,
+      },
+    }),
+    signal,
+  });
+
+  logger.log("Tencent翻译API响应状态:", response.status, response.statusText);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    logger.error("Tencent翻译API错误响应:", errorText);
+    throw new Error(`Tencent翻译请求失败: ${response.status}`);
+  }
+
+  const data = await response.json();
+  logger.log("Tencent翻译API返回数据:", data);
+
+  if (
+    data.auto_translation &&
+    Array.isArray(data.auto_translation) &&
+    data.auto_translation.length > 0
+  ) {
+    const translation = data.auto_translation[0];
+    if (typeof translation === "string") {
+      logger.log("Tencent翻译成功:", translation);
+      return translation;
+    }
+  }
+
+  throw new Error("Tencent翻译返回数据格式错误");
+};
+
+const translateWithOpenRouter = async (
+  text: string,
+  signal?: AbortSignal,
+  direction: "en-to-zh" | "zh-to-en" = "en-to-zh",
+  apiKey?: string,
+): Promise<string> => {
+  // Try to use provided key, or fallback to environment variable (safely)
+  // We prioritize the key passed from storage (which might have been set via UI)
+  let finalApiKey = apiKey;
+
+  if (!finalApiKey) {
+    try {
+      // @ts-ignore
+      finalApiKey = import.meta.env?.WXT_OPENROUTER_API_KEY || "";
+    } catch {
+      finalApiKey = "";
+    }
+  }
+
+  if (!finalApiKey) {
+    throw new Error("OpenRouter API Key 未配置，请在插件设置中填写 API Key");
+  }
+
+  const url = "https://openrouter.ai/api/v1/chat/completions";
+  logger.log("正在请求OpenRouter翻译API:", url);
+
+  const systemPrompt =
+    direction === "en-to-zh"
+      ? "You are a professional translator. Translate the following English text to Chinese. Only output the translated text, no explanations."
+      : "You are a professional translator. Translate the following Chinese text to English. Only output the translated text, no explanations.";
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${finalApiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://github.com/wxt-dev/wxt",
+      "X-Title": "Translation Extension",
+    },
+    body: JSON.stringify({
+      model: "xiaomi/mimo-v2-flash:free",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: text },
+      ],
+    }),
+    signal,
+  });
+
+  logger.log("OpenRouter API响应状态:", response.status, response.statusText);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    logger.error("OpenRouter API错误响应:", errorText);
+    throw new Error(`OpenRouter请求失败: ${response.status}`);
+  }
+
+  const data = await response.json();
+  logger.log("OpenRouter API返回数据:", data);
+
+  // OpenRouter/OpenAI standard response format
+  const content = data.choices?.[0]?.message?.content;
+  if (typeof content === "string") {
+    logger.log("OpenRouter翻译成功:", content);
+    return content;
+  }
+
+  throw new Error("OpenRouter翻译返回数据格式错误");
+};
+
+let currentAbortController: AbortController | null = null;
+
+const detectDirection = (text: string): "en-to-zh" | "zh-to-en" => {
+  const englishCount = (text.match(/[a-zA-Z]/g) || []).length;
+  return englishCount > 0 ? "en-to-zh" : "zh-to-en";
+};
+
+export const abortCurrentTranslation = () => {
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+  }
+};
+
+export const translateText = async (
+  text: string,
+  service?: "google" | "microsoft" | "tencent" | "openrouter",
+  direction?: "en-to-zh" | "zh-to-en",
+): Promise<{ translation: string; direction: "en-to-zh" | "zh-to-en" }> => {
+  if (currentAbortController) {
+    currentAbortController.abort();
+  }
+
+  currentAbortController = new AbortController();
+  const signal = currentAbortController.signal;
+
+  try {
+    const result = await browser.storage.local.get([
+      "selectedService",
+      "translationDirection",
+      "openRouterApiKey",
+    ]);
+    const selectedService =
+      service ||
+      (result.selectedService as "google" | "microsoft" | "tencent" | "openrouter") ||
+      "google";
+    const translationDirection = direction || detectDirection(text);
+    const apiKey = result.openRouterApiKey as string | undefined;
+
+    const translatorMap: {
+      [key: string]: {
+        name: string;
+        fn: (
+          text: string,
+          signal?: AbortSignal,
+          direction?: "en-to-zh" | "zh-to-en",
+        ) => Promise<string>;
+      };
+    } = {
+      google: { name: "Google", fn: translateWithGoogle },
+      microsoft: { name: "Microsoft", fn: translateWithMicrosoft },
+      tencent: { name: "Tencent", fn: translateWithTencent },
+      openrouter: {
+        name: "OpenRouter",
+        fn: (t, s, d) => translateWithOpenRouter(t, s, d, apiKey),
+      },
+    };
+
+    const translator = translatorMap[selectedService];
+    if (!translator) throw new Error("未知的翻译服务");
+
+    const translationResult = await translator.fn(text, signal, translationDirection);
+    return { translation: translationResult, direction: translationDirection };
+  } finally {
+    if (currentAbortController?.signal === signal) {
+      currentAbortController = null;
+    }
+  }
+};

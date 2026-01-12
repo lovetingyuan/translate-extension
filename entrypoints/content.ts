@@ -49,6 +49,10 @@ export default defineContentScript({
     const getOrCreateDialog = (): TranslationDialog => {
       if (!dialogInstance) {
         dialogInstance = new TranslationDialog();
+        dialogInstance.onClose = () => {
+          // Wait for selection to be restored
+          setTimeout(handleSelectionChange, 100);
+        };
       }
       return dialogInstance;
     };

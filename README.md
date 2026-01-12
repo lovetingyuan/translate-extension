@@ -74,10 +74,11 @@ The output will be in the `.output/` directory.
 
 ## ⚙️ Configuration
 
-To use the **OpenRouter** translation service, you need to provide an API key. Create a `.env` file in the root directory (do not commit this file):
+To use the **OpenRouter** or **Google** translation services, you need to provide API keys. Create a `.env` file in the root directory (do not commit this file):
 
 ```env
-WXT_OPENROUTER_API_KEY=your_api_key_here
+WXT_OPENROUTER_API_KEY=your_openrouter_key
+WXT_GOOGLE_HTML_API_KEY=your_google_key
 ```
 
 ## 📂 Project Structure

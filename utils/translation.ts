@@ -65,11 +65,18 @@ const translateWithGoogle = async (
 
   const [sourceLang, targetLang] = direction === "en-to-zh" ? ["en", "zh-CN"] : ["zh-CN", "en"];
 
+  // @ts-ignore
+  const apiKey = import.meta.env?.WXT_GOOGLE_HTML_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("Google API Key 未配置 (WXT_GOOGLE_HTML_API_KEY)");
+  }
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json+protobuf",
-      "X-Goog-API-Key": "AIzaSyATBXajvzQLTDHEQbcpq0Ihe0vWDHmO520",
+      "X-Goog-API-Key": apiKey,
       "user-agent": navigator.userAgent,
       accept: "*/*",
       "accept-encoding": "gzip, deflate, br",

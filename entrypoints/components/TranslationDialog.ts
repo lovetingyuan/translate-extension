@@ -326,22 +326,26 @@ export class TranslationDialog {
           .text-content.scrollable {
             overflow-y: auto;
           }
-          .translation .text-content {
-            overflow-y: auto;
+          .text-container {
+            position: relative;
           }
-          #translation-body {
-            flex-grow: 1;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-          }
-          #translation-body .text-content {
-            flex-grow: 1;
+          .text-container {
+            position: relative;
           }
           .view-all-btn {
-            background: none; border: none; color: rgba(255,255,255,0.7);
-            font-size: 12px; cursor: pointer; padding: 4px 0; margin-top: 4px;
-            text-decoration: underline; display: none;
+            background: linear-gradient(to right, transparent, #383838 30%);
+            border: none;
+            color: #a6adbb;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 12px 4px 32px;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            margin: 0;
+            text-decoration: none;
+            display: none;
+            border-radius: 4px;
           }
           .view-all-btn:hover { color: white; }
           /* Custom scrollbar */
@@ -419,14 +423,16 @@ export class TranslationDialog {
                   <button class="icon-btn" id="youdao-btn" title="在有道词典中查看">🔍</button>
                 </div>
               </div>
-              <div id="original-text-content" class="text-content ${
-                this.isOriginalExpanded ? "scrollable" : "collapsed"
-              }">${this.escapeHtml(this.originalText)}</div>
-              ${
-                !this.isOriginalExpanded
-                  ? '<button id="view-all-btn" class="view-all-btn">查看全部</button>'
-                  : ""
-              }
+              <div class="text-container">
+                <div id="original-text-content" class="text-content ${
+                  this.isOriginalExpanded ? "scrollable" : "collapsed"
+                }">${this.escapeHtml(this.originalText)}</div>
+                ${
+                  !this.isOriginalExpanded
+                    ? '<button id="view-all-btn" class="view-all-btn">查看全部</button>'
+                    : ""
+                }
+              </div>
             </div>
             <div class="content-box translation">
               <div class="box-header">

@@ -382,100 +382,88 @@ export class TranslationDialog {
             <h3>${this.status === "error" && !this.translation ? "翻译失败" : "翻译结果"}</h3>
             <button class="close-btn" id="close-btn">×</button>
           </div>
-          ${
-            this.status !== "error" || this.translation
-              ? `
-            <div class="settings-row">
-              <div class="setting-item">
-                <div class="direction-btns">
-                  <button class="direction-btn ${
-                    this.direction === "zh-to-en" ? "active" : ""
-                  }" data-direction="zh-to-en">中译英</button>
-                  <button class="direction-btn ${
-                    this.direction === "en-to-zh" ? "active" : ""
-                  }" data-direction="en-to-zh">英译中</button>
-                </div>
-              </div>
-              <div class="setting-item" style="width: 50%;">
-                <select id="service-select">
-                  <option value="google" ${
-                    this.service === "google" ? "selected" : ""
-                  }>Google 翻译</option>
-                  <option value="microsoft" ${
-                    this.service === "microsoft" ? "selected" : ""
-                  }>Microsoft 翻译</option>
-                  <option value="tencent" ${
-                    this.service === "tencent" ? "selected" : ""
-                  }>腾讯翻译</option>
-                  <option value="openrouter" ${
-                    this.service === "openrouter" ? "selected" : ""
-                  }>OpenRouter</option>
-                </select>
+          <div class="settings-row">
+            <div class="setting-item">
+              <div class="direction-btns">
+                <button class="direction-btn ${
+                  this.direction === "zh-to-en" ? "active" : ""
+                }" data-direction="zh-to-en">中译英</button>
+                <button class="direction-btn ${
+                  this.direction === "en-to-zh" ? "active" : ""
+                }" data-direction="en-to-zh">英译中</button>
               </div>
             </div>
-            <div class="content-box original">
-              <div class="box-header">
-                <span>原文</span>
-                <div style="display: flex; gap: 8px;">
-                  <button class="icon-btn" id="tts-btn">${
-                    this.isReadingOriginal ? "⏹" : "🔊"
-                  }</button>
-                  <button class="icon-btn" id="youdao-btn" title="在有道词典中查看">🔍</button>
-                </div>
-              </div>
-              <div class="text-container">
-                <div id="original-text-content" class="text-content ${
-                  this.isOriginalExpanded ? "scrollable" : "collapsed"
-                }">${this.escapeHtml(this.originalText)}</div>
-                ${
-                  !this.isOriginalExpanded
-                    ? '<button id="view-all-btn" class="view-all-btn">查看全部</button>'
-                    : ""
-                }
+            <div class="setting-item" style="width: 50%;">
+              <select id="service-select">
+                <option value="google" ${
+                  this.service === "google" ? "selected" : ""
+                }>Google 翻译</option>
+                <option value="microsoft" ${
+                  this.service === "microsoft" ? "selected" : ""
+                }>Microsoft 翻译</option>
+                <option value="tencent" ${
+                  this.service === "tencent" ? "selected" : ""
+                }>腾讯翻译</option>
+                <option value="openrouter" ${
+                  this.service === "openrouter" ? "selected" : ""
+                }>OpenRouter</option>
+              </select>
+            </div>
+          </div>
+          <div class="content-box original">
+            <div class="box-header">
+              <span>原文</span>
+              <div style="display: flex; gap: 8px;">
+                <button class="icon-btn" id="tts-btn">${
+                  this.isReadingOriginal ? "⏹" : "🔊"
+                }</button>
+                <button class="icon-btn" id="youdao-btn" title="在有道词典中查看">🔍</button>
               </div>
             </div>
-            <div class="content-box translation">
-              <div class="box-header">
-                <span>翻译</span>
-                <div style="display: flex; gap: 8px;">
-                  <button class="icon-btn" id="tts-translation-btn" ${
-                    this.status === "loading" || !this.translation ? "disabled" : ""
-                  }>${this.isReadingTranslation ? "⏹" : "🔊"}</button>
-                  <button class="icon-btn" id="quick-copy-btn" ${
-                    this.status === "loading" || !this.translation ? "disabled" : ""
-                  }>📋</button>
-                </div>
+            <div class="text-container">
+              <div id="original-text-content" class="text-content ${
+                this.isOriginalExpanded ? "scrollable" : "collapsed"
+              }">${this.escapeHtml(this.originalText)}</div>
+              ${
+                !this.isOriginalExpanded
+                  ? '<button id="view-all-btn" class="view-all-btn">查看全部</button>'
+                  : ""
+              }
+            </div>
+          </div>
+          <div class="content-box translation">
+            <div class="box-header">
+              <span>翻译</span>
+              <div style="display: flex; gap: 8px;">
+                <button class="icon-btn" id="tts-translation-btn" ${
+                  this.status === "loading" || !this.translation ? "disabled" : ""
+                }>${this.isReadingTranslation ? "⏹" : "🔊"}</button>
+                <button class="icon-btn" id="quick-copy-btn" ${
+                  this.status === "loading" || !this.translation ? "disabled" : ""
+                }>📋</button>
               </div>
-              <div id="translation-body">
-                ${
-                  this.status === "loading"
+            </div>
+            <div id="translation-body">
+              ${
+                this.status === "loading"
+                  ? `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                  <span>正在翻译...</span>
+                </div>
+              `
+                  : this.status === "success"
                     ? `
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-                    <span>正在翻译...</span>
-                  </div>
-                `
-                    : this.status === "success"
-                      ? `
-                  <div class="text-content">${this.escapeHtml(this.translation)}</div>
-                `
-                      : `
-                  <div style="color: #ff6b6b; display: flex; align-items: center; gap: 8px;">
-                    <span>✕</span><span>${this.escapeHtml(this.errorMessage)}</span>
-                  </div>
-                `
-                }
-              </div>
+                <div class="text-content">${this.escapeHtml(this.translation)}</div>
+              `
+                    : `
+                <div style="color: #ff6b6b; display: flex; align-items: center; gap: 8px;">
+                  <span>✕</span><span>${this.escapeHtml(this.errorMessage)}</span>
+                </div>
+              `
+              }
             </div>
-          `
-              : `
-            <div class="content-box">
-              <div style="color: #ff6b6b; display: flex; align-items: center; gap: 8px;">
-                <span>✕</span><span>${this.escapeHtml(this.errorMessage)}</span>
-              </div>
-            </div>
-          `
-          }
+          </div>
         </div>
       `;
     }

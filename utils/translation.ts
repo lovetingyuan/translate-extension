@@ -231,23 +231,12 @@ const translateWithOpenRouter = async (
   text: string,
   signal?: AbortSignal,
   direction: "en-to-zh" | "zh-to-en" = "en-to-zh",
-  apiKey?: string,
 ): Promise<string> => {
-  // Try to use provided key, or fallback to environment variable (safely)
-  // We prioritize the key passed from storage (which might have been set via UI)
-  let finalApiKey = apiKey;
+  // @ts-ignore
+  const apiKey = import.meta.env?.WXT_OPENROUTER_API_KEY;
 
-  if (!finalApiKey) {
-    try {
-      // @ts-ignore
-      finalApiKey = import.meta.env?.WXT_OPENROUTER_API_KEY || "";
-    } catch {
-      finalApiKey = "";
-    }
-  }
-
-  if (!finalApiKey) {
-    throw new Error("OpenRouter API Key 未配置，请在插件设置中填写 API Key");
+  if (!apiKey) {
+    throw new Error("OpenRouter API Key 未配置 (WXT_OPENROUTER_API_KEY)");
   }
 
   const url = "https://openrouter.ai/api/v1/chat/completions";
@@ -261,7 +250,7 @@ const translateWithOpenRouter = async (
   const response = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${finalApiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "https://github.com/wxt-dev/wxt",
       "X-Title": "Translation Extension",
@@ -327,14 +316,12 @@ export const translateText = async (
     const result = await browser.storage.local.get([
       "selectedService",
       "translationDirection",
-      "openRouterApiKey",
     ]);
     const selectedService =
       service ||
       (result.selectedService as "google" | "microsoft" | "tencent" | "openrouter") ||
       "google";
     const translationDirection = direction || detectDirection(text);
-    const apiKey = result.openRouterApiKey as string | undefined;
 
     const translatorMap: {
       [key: string]: {
@@ -351,7 +338,7 @@ export const translateText = async (
       tencent: { name: "Tencent", fn: translateWithTencent },
       openrouter: {
         name: "OpenRouter",
-        fn: (t, s, d) => translateWithOpenRouter(t, s, d, apiKey),
+        fn: (t, s, d) => translateWithOpenRouter(t, s, d),
       },
     };
 

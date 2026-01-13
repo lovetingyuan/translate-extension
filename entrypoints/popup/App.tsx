@@ -23,7 +23,7 @@ function App() {
   const [selectedService, setSelectedService] = useState<
     'google' | 'microsoft' | 'tencent' | 'openrouter'
   >('google')
-  const [theme, setTheme] = useState('light')
+  const [theme, setTheme] = useState('lemonade')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -64,7 +64,7 @@ function App() {
         // Apply theme to both html and body to ensure coverage
         document.documentElement.setAttribute('data-theme', res.theme)
       } else {
-        document.documentElement.setAttribute('data-theme', 'light')
+        document.documentElement.setAttribute('data-theme', 'lemonade')
       }
     })
   }, [])
@@ -81,11 +81,12 @@ function App() {
   }
 
   const toggleTheme = async () => {
-    const newTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'cupcake' : 'light'
+    const newTheme = theme === 'lemonade' ? 'dracula' : 'lemonade'
     setTheme(newTheme)
     document.documentElement.setAttribute('data-theme', newTheme)
     await browser.storage.local.set({ theme: newTheme })
   }
+
 
   const handleTranslate = async (
     serviceOverride?: 'google' | 'microsoft' | 'tencent' | 'openrouter'
@@ -150,12 +151,10 @@ function App() {
       <div className="flex items-center justify-between px-4 py-2 shrink-0">
         <span className="text-base font-semibold opacity-80">中英直译助手</span>
         <button className="btn btn-ghost btn-circle btn-sm" onClick={toggleTheme} title="切换主题">
-          {theme === 'light' ? (
+          {theme === 'lemonade' ? (
             <SunIcon className="h-4 w-4" />
-          ) : theme === 'dark' ? (
-            <MoonIcon className="h-4 w-4" />
           ) : (
-            <GlobeIcon className="h-4 w-4" />
+            <MoonIcon className="h-4 w-4" />
           )}
         </button>
       </div>

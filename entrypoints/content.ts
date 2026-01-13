@@ -1,7 +1,7 @@
 import { TranslationDialog } from "./components/TranslationDialog";
 
 export default defineContentScript({
-  matches: ["*://*/*"],
+  matches: ["http://*/*", "https://*/*"],
   main() {
     if (import.meta.env.DEV) console.log("Translation content script loaded.");
 

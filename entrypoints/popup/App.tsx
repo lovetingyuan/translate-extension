@@ -167,7 +167,7 @@ function App() {
             autoFocus
             ref={textareaRef}
             className="textarea textarea-bordered w-full h-28 resize-none focus:border-primary focus:outline-none transition-colors"
-            placeholder="输入要翻译的文字... (Shift+Enter 快速翻译)"
+            placeholder="输入要翻译的文字（到英文）... (Shift+Enter 快速翻译)"
             value={inputText}
             onChange={e => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -211,27 +211,27 @@ function App() {
             </div>
             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                className={`btn btn-ghost btn-sm btn-circle min-h-0 h-8 w-8 p-0 ${
+                className={`btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0 ${
                   isSpeaking ? 'text-primary' : ''
                 }`}
                 onClick={handleSpeak}
                 title={isSpeaking ? '停止朗读' : '朗读'}
               >
                 {isSpeaking ? (
-                  <StopIcon className="h-4 w-4" />
+                  <StopIcon className="h-3 w-3" />
                 ) : (
-                  <SpeakerIcon className="h-4 w-4" />
+                  <SpeakerIcon className="h-3 w-3" />
                 )}
               </button>
               <button
-                className="btn btn-ghost btn-sm btn-circle min-h-0 h-8 w-8 p-0"
+                className="btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0"
                 onClick={handleCopy}
                 title="复制"
               >
                 {copied ? (
-                  <CheckIcon className="h-4 w-4 text-success shrink-0" />
+                  <CheckIcon className="h-3 w-3 text-green-500 shrink-0" />
                 ) : (
-                  <CopyIcon className="h-4 w-4 shrink-0" />
+                  <CopyIcon className="h-3 w-3 shrink-0" />
                 )}
               </button>
             </div>
@@ -240,7 +240,7 @@ function App() {
       </div>
 
       {/* Footer */}
-      <footer className="px-4 py-3 bg-base-200 text-base-content border-t border-base-300 shrink-0 flex justify-between items-center">
+      <footer className="px-4 py-2 bg-base-200 text-base-content border-t border-base-300 shrink-0 flex justify-between items-center">
         <p className="text-[10px] opacity-50">v{__APP_VERSION__} © 2026 Translate Extension</p>
         <a
           href="https://github.com/lovetingyuan/translate-extension"

@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes:
+    lemonade --default,
+    night --prefersdark;
+}
+
+@custom-variant dark (&:where([data-theme=night], [data-theme=night] *));
 
 @theme {
   --font-sans: "Inter", "system-ui", "Avenir", "Helvetica", "Arial", "sans-serif";

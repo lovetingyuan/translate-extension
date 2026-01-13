@@ -295,9 +295,16 @@ const translateWithOpenRouter = async (
 
 let currentAbortController: AbortController | null = null
 
-const detectDirection = (text: string): 'en-to-zh' | 'zh-to-en' => {
-  const englishCount = (text.match(/[a-zA-Z]/g) || []).length
-  return englishCount > 0 ? 'en-to-zh' : 'zh-to-en'
+export const detectDirection = (text: string): 'en-to-zh' | 'zh-to-en' => {
+  const cnCount = (text.match(/[\u4e00-\u9fa5]/g) || []).length
+  const enCount = (text.match(/[a-zA-Z]/g) || []).length
+
+  // 这里的策略是：统计中文和英文字符的数量
+  // 由于中文通常更紧凑，我们给中文一个权重（例如 1个汉字 相当于 3个英文字符）
+  // 如果 英文数量 > 中文数量 * 3，则认为是英文原文，需翻译为中文 (en-to-zh)
+  // 否则默认为中译英 (zh-to-en)
+  // 这样解决了包含少量英文单词的中文句子被误判为英文的问题
+  return enCount > cnCount * 3 ? 'en-to-zh' : 'zh-to-en'
 }
 
 export const abortCurrentTranslation = () => {

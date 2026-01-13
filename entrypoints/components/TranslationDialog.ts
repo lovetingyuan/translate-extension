@@ -1,4 +1,5 @@
 import { browser } from "wxt/browser";
+import { detectDirection } from "../../utils/translation";
 
 /**
  * TranslationDialog Class
@@ -37,7 +38,7 @@ export class TranslationDialog {
     this.originalText = originalText;
     this.translation = "";
     this.isDialogExpanded = false;
-    this.direction = this.detectDirection(originalText);
+    this.direction = detectDirection(originalText);
     this.stopReading();
     this.loadSettings().then(() => {
       this.ensureInDocument();
@@ -81,7 +82,7 @@ export class TranslationDialog {
     this.originalText = originalText;
     this.translation = translation;
     this.isDialogExpanded = false;
-    this.direction = direction || this.detectDirection(originalText);
+    this.direction = direction || detectDirection(originalText);
     this.loadSettings().then(() => {
       this.ensureInDocument();
       this.render();
@@ -115,10 +116,6 @@ export class TranslationDialog {
     }
   }
 
-  private detectDirection(text: string): "en-to-zh" | "zh-to-en" {
-    const englishCount = (text.match(/[a-zA-Z]/g) || []).length;
-    return englishCount > 0 ? "en-to-zh" : "zh-to-en";
-  }
 
   private escapeHtml(text: string): string {
     const div = document.createElement("div");

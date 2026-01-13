@@ -284,6 +284,8 @@ export class TranslationDialog {
             overflow: hidden;
           }
           .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
+          .title-container { display: flex; align-items: center; gap: 8px; }
+          .app-icon { width: 24px; height: 24px; border-radius: 6px; }
           .header h3 { margin: 0; font-size: 18px; font-weight: 600; }
           .expand-btn {
             background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px;
@@ -397,7 +399,10 @@ export class TranslationDialog {
       innerContent.innerHTML = `
         <div class="container">
           <div class="header">
-            <h3>${this.status === 'error' && !this.translation ? '翻译失败' : '中英直译'}</h3>
+            <div class="title-container">
+              <img src="${browser.runtime.getURL('/icon.svg')}" class="app-icon" alt="icon" />
+              <h3>${this.status === 'error' && !this.translation ? '翻译失败' : '中英直译'}</h3>
+            </div>
             <div style="display: flex; gap: 8px;">
               <button class="expand-btn" id="expand-btn" title="${
                 this.isDialogExpanded ? '还原' : '全屏'

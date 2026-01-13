@@ -2,11 +2,12 @@
 
 @plugin "daisyui" {
   themes:
-    lemonade --default,
-    night --prefersdark;
+    light --default,
+    dark --prefersdark,
+    cupcake;
 }
 
-@custom-variant dark (&:where([data-theme=night], [data-theme=night] *));
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 @theme {
   --font-sans: "Inter", "system-ui", "Avenir", "Helvetica", "Arial", "sans-serif";

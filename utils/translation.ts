@@ -299,11 +299,16 @@ export const detectDirection = (text: string): 'en-to-zh' | 'zh-to-en' => {
   const cnCount = (text.match(/[\u4e00-\u9fa5]/g) || []).length
   const enCount = (text.match(/[a-zA-Z]/g) || []).length
 
-  // 这里的策略是：统计中文和英文字符的数量
-  // 由于中文通常更紧凑，我们给中文一个权重（例如 1个汉字 相当于 3个英文字符）
-  // 如果 英文数量 > 中文数量 * 3，则认为是英文原文，需翻译为中文 (en-to-zh)
-  // 否则默认为中译英 (zh-to-en)
-  // 这样解决了包含少量英文单词的中文句子被误判为英文的问题
+  // 语言检测策略：
+  // 1. 中文信息密度高，通常 1 个汉字对应 3-5 个英文字母（单词）。
+  // 2. 只有当英文字符数量 *显著* 多于中文字符（> 3倍）时，才判定为英文原文 (en-to-zh)。
+  // 3. 其他情况（中文更多、两者持平、混合文本）均默认视为中文原文 (zh-to-en)。
+  //
+  // 典型案例分析：
+  // - "Hello World" (EN:10, CN:0) -> 10 > 0 -> en-to-zh (英译中) ✅
+  // - "你好" (EN:0, CN:2) -> 0 < 6 -> zh-to-en (中译英) ✅
+  // - "我爱iPhone" (EN:6, CN:2) -> 6 <= 6 -> zh-to-en (中译英) ✅
+  //   (如果判为英文，翻译结果往往不处理中文部分；判为中文则能正确翻译为 "I love iPhone")
   return enCount > cnCount * 3 ? 'en-to-zh' : 'zh-to-en'
 }
 

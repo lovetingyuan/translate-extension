@@ -3,7 +3,6 @@ import { translateText } from '../../utils/translation'
 import {
   SunIcon,
   MoonIcon,
-  GlobeIcon,
   ErrorIcon,
   SpeakerIcon,
   StopIcon,
@@ -86,7 +85,6 @@ function App() {
     document.documentElement.setAttribute('data-theme', newTheme)
     await browser.storage.local.set({ theme: newTheme })
   }
-
 
   const handleTranslate = async (
     serviceOverride?: 'google' | 'microsoft' | 'tencent' | 'openrouter'
@@ -247,7 +245,7 @@ function App() {
           rel="noopener noreferrer"
           className="hover:text-primary transition-colors opacity-50 hover:opacity-100 flex items-center"
         >
-          <GithubIcon className="h-[14px] w-[14px]" />
+          <GithubIcon className="h-3.5 w-3.5" />
         </a>
       </footer>
     </div>

@@ -97,7 +97,7 @@ function App() {
     setTranslation('')
 
     try {
-      const result = await translateText(inputText, serviceOverride || selectedService)
+      const result = await translateText(inputText, serviceOverride || selectedService, 'en')
       setTranslation(result.translation)
       setDirection(result.direction)
     } catch (err: any) {

@@ -9,13 +9,13 @@ export default defineBackground(() => {
       translation: string;
       timestamp: number;
       success: boolean;
-      direction: "en-to-zh" | "zh-to-en";
+      direction: "zh" | "en";
     }
   >();
 
   const pendingTranslations = new Map<
     string,
-    Promise<{ translation: string; direction: "en-to-zh" | "zh-to-en" }>
+    Promise<{ translation: string; direction: "zh" | "en" }>
   >();
 
   browser.runtime.onInstalled.addListener(() => {
@@ -35,7 +35,7 @@ export default defineBackground(() => {
         translation: "",
         timestamp: 0,
         success: false,
-        direction: "en-to-zh",
+        direction: "zh",
       });
     }
     return tabSelections.get(tabId)!;
@@ -114,7 +114,7 @@ export default defineBackground(() => {
                   translation: "",
                   timestamp: Date.now(),
                   success: false,
-                  direction: "en-to-zh",
+                  direction: "zh",
                 });
               }
               throw err;
@@ -134,7 +134,7 @@ export default defineBackground(() => {
 
     if (message.action === "translate") {
       const service = message.service as "google" | "microsoft" | "tencent" | "openrouter";
-      const direction = message.direction as "en-to-zh" | "zh-to-en";
+      const direction = message.direction as "zh" | "en";
 
       if (direction) {
         browser.storage.local.set({ translationDirection: direction });
@@ -258,7 +258,7 @@ export default defineBackground(() => {
             translation: "",
             timestamp: Date.now(),
             success: false,
-            direction: "en-to-zh",
+            direction: "zh",
           });
           browser.tabs
             .sendMessage(tab.id!, {

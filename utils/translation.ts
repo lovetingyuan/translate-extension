@@ -56,14 +56,14 @@ const getMicrosoftToken = async (): Promise<string> => {
 
 const translateWithGoogle = async (
   text: string,
-  signal?: AbortSignal,
-  direction: 'en-to-zh' | 'zh-to-en' = 'en-to-zh'
+  targetLang: 'zh' | 'en',
+  signal?: AbortSignal
 ): Promise<string> => {
   const url = 'https://translate-pa.googleapis.com/v1/translateHtml'
 
   logger.log('正在请求Google翻译API:', url)
 
-  const [sourceLang, targetLang] = direction === 'en-to-zh' ? ['en', 'zh-CN'] : ['zh-CN', 'en']
+  // const [sourceLang, targetLang] = direction === 'en-to-zh' ? ['en', 'zh-CN'] : ['zh-CN', 'en']
 
   // @ts-ignore
   const apiKey = import.meta.env?.WXT_GOOGLE_HTML_API_KEY
@@ -82,7 +82,7 @@ const translateWithGoogle = async (
       'accept-encoding': 'gzip, deflate, br',
       'accept-language': 'en,zh-CN;q=0.9,zh;q=0.8,ja;q=0.7,en-US;q=0.6',
     },
-    body: JSON.stringify([[[text], sourceLang, targetLang], 'te']),
+    body: JSON.stringify([[[text], 'auto', targetLang], 'wt_lib']),
     signal,
   })
 
@@ -120,11 +120,12 @@ const translateWithGoogle = async (
 
 const translateWithMicrosoft = async (
   text: string,
-  signal?: AbortSignal,
-  direction: 'en-to-zh' | 'zh-to-en' = 'en-to-zh'
+  targetLang: 'zh' | 'en',
+  signal?: AbortSignal
 ): Promise<string> => {
-  const [fromLang, toLang] = direction === 'en-to-zh' ? ['', 'zh-Hans'] : ['zh-Hans', 'en']
-  const url = `https://api-edge.cognitive.microsofttranslator.com/translate?api-version=3.0&from=${fromLang}&to=${toLang}`
+  // const [fromLang, toLang] = direction === 'en-to-zh' ? ['', 'zh-Hans'] : ['zh-Hans', 'en']
+  const toLang = targetLang === 'zh' ? 'zh-Hans' : 'en'
+  const url = `https://api-edge.cognitive.microsofttranslator.com/translate?api-version=3.0&from=&to=${toLang}`
 
   logger.log('正在请求Microsoft翻译API:', url)
 
@@ -173,14 +174,12 @@ const translateWithMicrosoft = async (
 
 const translateWithTencent = async (
   text: string,
-  signal?: AbortSignal,
-  direction: 'en-to-zh' | 'zh-to-en' = 'en-to-zh'
+  targetLang: 'zh' | 'en',
+  signal?: AbortSignal
 ): Promise<string> => {
   const url = 'https://transmart.qq.com/api/imt'
 
   logger.log('正在请求Tencent翻译API:', url)
-
-  const [sourceLang, targetLang] = direction === 'en-to-zh' ? ['en', 'zh'] : ['zh', 'en']
 
   const response = await fetch(url, {
     method: 'POST',
@@ -199,7 +198,7 @@ const translateWithTencent = async (
       model_category: 'normal',
       source: {
         text_list: [text],
-        lang: sourceLang,
+        lang: 'auto',
       },
       target: {
         lang: targetLang,
@@ -236,8 +235,8 @@ const translateWithTencent = async (
 
 const translateWithOpenRouter = async (
   text: string,
-  signal?: AbortSignal,
-  direction: 'en-to-zh' | 'zh-to-en' = 'en-to-zh'
+  targetLang: 'zh' | 'en',
+  signal?: AbortSignal
 ): Promise<string> => {
   // @ts-ignore
   const apiKey = import.meta.env?.WXT_OPENROUTER_API_KEY
@@ -248,12 +247,8 @@ const translateWithOpenRouter = async (
 
   const url = 'https://openrouter.ai/api/v1/chat/completions'
   logger.log('正在请求OpenRouter翻译API:', url)
-
-  const systemPrompt =
-    direction === 'en-to-zh'
-      ? 'You are a professional translator. Translate the following English text to Chinese. Only output the translated text, no explanations.'
-      : 'You are a professional translator. Translate the following Chinese text to English. Only output the translated text, no explanations.'
-
+  const lang = targetLang === 'zh' ? 'Chinese' : 'English'
+  const systemPrompt = `You are a professional translator. Translate the following text to ${lang}. Only output the translated text, no explanations.`
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -295,7 +290,7 @@ const translateWithOpenRouter = async (
 
 let currentAbortController: AbortController | null = null
 
-export const detectDirection = (text: string): 'en-to-zh' | 'zh-to-en' => {
+export const detectDirection = (text: string): 'zh' | 'en' => {
   const cnCount = (text.match(/[\u4e00-\u9fa5]/g) || []).length
   const enCount = (text.match(/[a-zA-Z]/g) || []).length
 
@@ -309,7 +304,7 @@ export const detectDirection = (text: string): 'en-to-zh' | 'zh-to-en' => {
   // - "你好" (EN:0, CN:2) -> 0 < 6 -> zh-to-en (中译英) ✅
   // - "我爱iPhone" (EN:6, CN:2) -> 6 <= 6 -> zh-to-en (中译英) ✅
   //   (如果判为英文，翻译结果往往不处理中文部分；判为中文则能正确翻译为 "I love iPhone")
-  return enCount > cnCount * 3 ? 'en-to-zh' : 'zh-to-en'
+  return enCount > cnCount * 3 ? 'zh' : 'en'
 }
 
 export const abortCurrentTranslation = () => {
@@ -322,8 +317,8 @@ export const abortCurrentTranslation = () => {
 export const translateText = async (
   text: string,
   service?: 'google' | 'microsoft' | 'tencent' | 'openrouter',
-  direction?: 'en-to-zh' | 'zh-to-en'
-): Promise<{ translation: string; direction: 'en-to-zh' | 'zh-to-en' }> => {
+  targetLang?: 'zh' | 'en'
+): Promise<{ translation: string; direction: 'zh' | 'en' }> => {
   if (currentAbortController) {
     currentAbortController.abort()
   }
@@ -331,22 +326,20 @@ export const translateText = async (
   currentAbortController = new AbortController()
   const signal = currentAbortController.signal
 
+  // Determine direction if not provided
+  const finalDirection = targetLang || detectDirection(text)
+
   try {
-    const result = await browser.storage.local.get(['selectedService', 'translationDirection'])
+    const result = await browser.storage.local.get(['selectedService'])
     const selectedService =
       service ||
       (result.selectedService as 'google' | 'microsoft' | 'tencent' | 'openrouter') ||
       'google'
-    const translationDirection = direction || 'zh-to-en'
 
     const translatorMap: {
       [key: string]: {
         name: string
-        fn: (
-          text: string,
-          signal?: AbortSignal,
-          direction?: 'en-to-zh' | 'zh-to-en'
-        ) => Promise<string>
+        fn: (text: string, targetLang: 'zh' | 'en', signal?: AbortSignal) => Promise<string>
       }
     } = {
       google: { name: 'Google', fn: translateWithGoogle },
@@ -361,8 +354,8 @@ export const translateText = async (
     const translator = translatorMap[selectedService]
     if (!translator) throw new Error('未知的翻译服务')
 
-    const translationResult = await translator.fn(text, signal, translationDirection)
-    return { translation: translationResult, direction: translationDirection }
+    const translationResult = await translator.fn(text, finalDirection, signal)
+    return { translation: translationResult, direction: finalDirection }
   } finally {
     if (currentAbortController?.signal === signal) {
       currentAbortController = null

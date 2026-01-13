@@ -15,7 +15,7 @@ import {
 function App() {
   const [inputText, setInputText] = useState('')
   const [translation, setTranslation] = useState('')
-  const [direction, setDirection] = useState<'en-to-zh' | 'zh-to-en'>('en-to-zh')
+  const [direction, setDirection] = useState<'zh' | 'en'>('zh')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
@@ -128,7 +128,7 @@ function App() {
     // Target language is the result of the translation
     // If direction is en-to-zh, speak zh
     // If direction is zh-to-en, speak en
-    utterance.lang = direction === 'en-to-zh' ? 'zh-CN' : 'en-US'
+    utterance.lang = direction === 'zh' ? 'zh-CN' : 'en-US'
 
     utterance.onend = () => setIsSpeaking(false)
     utterance.onerror = () => setIsSpeaking(false)

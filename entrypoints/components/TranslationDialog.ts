@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser'
 import { detectDirection } from '../../utils/translation'
+import iconSvg from '../../assets/icon.svg?raw'
 
 /**
  * TranslationDialog Class
@@ -285,7 +286,8 @@ export class TranslationDialog {
           }
           .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
           .title-container { display: flex; align-items: center; gap: 8px; }
-          .app-icon { width: 24px; height: 24px; border-radius: 6px; }
+          .app-icon { width: 24px; height: 24px; border-radius: 6px; overflow: hidden; display: flex; }
+          .app-icon svg { width: 100%; height: 100%; }
           .header h3 { margin: 0; font-size: 18px; font-weight: 600; }
           .expand-btn {
             background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px;
@@ -400,7 +402,7 @@ export class TranslationDialog {
         <div class="container">
           <div class="header">
             <div class="title-container">
-              <img src="${browser.runtime.getURL('/icon.svg')}" class="app-icon" alt="icon" />
+              <div class="app-icon">${iconSvg}</div>
               <h3>${this.status === 'error' && !this.translation ? '翻译失败' : '中英直译'}</h3>
             </div>
             <div style="display: flex; gap: 8px;">

@@ -1,0 +1,37 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="gradient_cn_bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#FF5F6D;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#FFC371;stop-opacity:1" />
+        </linearGradient>
+        
+        <linearGradient id="gradient_en_bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#2193B0;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#6DD5ED;stop-opacity:1" />
+        </linearGradient>
+
+        <linearGradient id="straight_arrow_gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+             <stop offset="0%" style="stop-color:#FF9A9E;stop-opacity:1" /> 
+             <stop offset="100%" style="stop-color:#A1C4FD;stop-opacity:1" /> 
+        </linearGradient>
+    </defs>
+
+    <rect x="0" y="0" width="512" height="512" fill="white"/>
+
+    <path d="M0 0 H 512 V 100 Q 256 256 100 512 H 0 V 0 Z" fill="url(#gradient_cn_bg)"/>
+
+    <path d="M512 512 H 0 V 412 Q 256 256 412 0 H 512 V 512 Z" fill="url(#gradient_en_bg)"/>
+
+    <g transform="translate(256 256) rotate(45)">
+        <path d="M -30 -12 L -30 -35 L -70 0 L -30 35 L -30 12 L 30 12 L 30 35 L 70 0 L 30 -35 L 30 -12 Z" 
+              fill="url(#straight_arrow_gradient)" 
+              stroke="white" 
+              stroke-width="14" 
+              stroke-linecap="round" 
+              stroke-linejoin="round"/>
+    </g>
+
+    <text x="125" y="135" font-family="'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="165" font-weight="950" fill="white" text-anchor="middle" dominant-baseline="central">中</text>
+    
+    <text x="387" y="377" font-family="Arial, Helvetica, sans-serif" font-size="155" font-weight="950" fill="white" text-anchor="middle" dominant-baseline="central">EN</text>
+</svg>

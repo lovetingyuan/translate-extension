@@ -1,5 +1,5 @@
 {
-  "name": "wxt-react-starter",
+  "name": "translate-extension",
   "version": "0.0.1",
   "private": true,
   "description": "A browser extension for bidirectional Chinese-English translation via context menus.",

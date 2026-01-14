@@ -1,15 +1,13 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "daisyui" {
-  themes:
-    lemonade --default,
-    dracula --prefersdark;
+  themes: lemonade --default, dracula --prefersdark;
 }
 
 @custom-variant dark (&:where([data-theme=dracula], [data-theme=dracula] *));
 
 @theme {
-  --font-sans: "Inter", "system-ui", "Avenir", "Helvetica", "Arial", "sans-serif";
+  --font-sans: 'Inter', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif';
 }
 
 @layer base {
@@ -21,6 +19,14 @@
     margin: 0;
     padding: 0;
     @apply bg-base-100 text-base-content;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    outline-offset: 0 !important;
+    outline-color: color-mix(in srgb, var(--color-primary, var(--p)), transparent 50%) !important;
   }
 }
 

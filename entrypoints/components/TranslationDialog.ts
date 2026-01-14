@@ -14,6 +14,7 @@ export class TranslationDialog {
   private translation: string = "";
   private direction: "zh" | "en" = "zh";
   private service: "google" | "microsoft" | "tencent" | "openrouter" = "google";
+  private theme: "light" | "dark" = "dark";
   private status: "loading" | "success" | "error" = "loading";
   private errorMessage: string = "";
   private isReadingOriginal: boolean = false;
@@ -105,9 +106,10 @@ export class TranslationDialog {
 
   private async loadSettings() {
     try {
-      const result = await browser.storage.local.get(["selectedService"]);
+      const result = await browser.storage.local.get(["selectedService", "theme"]);
       this.service =
         (result.selectedService as "google" | "microsoft" | "tencent" | "openrouter") || "google";
+      this.theme = (result.theme as "light" | "dark") || "dark";
     } catch (err) {
       if (import.meta.env.DEV) console.error("Failed to load settings:", err);
     }
@@ -249,6 +251,10 @@ export class TranslationDialog {
             user-select: none; -webkit-user-select: none; outline: none;
             max-height: 85vh; overflow: hidden !important;
             transition: all 0.3s ease;
+          }
+          input, textarea, select, button {
+            outline-offset: 0;
+            outline-color: color-mix(in srgb, #667eea, transparent 50%);
           }
           dialog.expanded {
             width: 100%;

@@ -238,15 +238,24 @@ const translateWithOpenRouter = async (
   targetLang: "zh" | "en",
   signal?: AbortSignal,
 ): Promise<string> => {
+  // Load user settings
+  const settings = await browser.storage.local.get(['openRouterApiKey', 'openRouterModelId']);
+  const userApiKey = settings.openRouterApiKey as string | undefined;
+  const userModelId = settings.openRouterModelId as string | undefined;
+
   // @ts-ignore
-  const apiKey = import.meta.env?.WXT_OPENROUTER_API_KEY;
+  const envApiKey = import.meta.env?.WXT_OPENROUTER_API_KEY;
+  
+  const apiKey = userApiKey || envApiKey;
 
   if (!apiKey) {
-    throw new Error("OpenRouter API Key 未配置 (WXT_OPENROUTER_API_KEY)");
+    throw new Error("OpenRouter API Key 未配置 (请在设置中配置或检查环境变量)");
   }
 
+  const model = userModelId || "xiaomi/mimo-v2-flash:free";
+
   const url = "https://openrouter.ai/api/v1/chat/completions";
-  logger.log("正在请求OpenRouter翻译API:", url);
+  logger.log("正在请求OpenRouter翻译API:", url, "Model:", model);
   const lang = targetLang === "zh" ? "Chinese" : "English";
   const systemPrompt = `You are a professional translator. Translate the following text to ${lang}. Only output the translated text, no explanations.`;
   const response = await fetch(url, {
@@ -258,7 +267,7 @@ const translateWithOpenRouter = async (
       "X-Title": "Translation Extension",
     },
     body: JSON.stringify({
-      model: "xiaomi/mimo-v2-flash:free",
+      model: model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: text },

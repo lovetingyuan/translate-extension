@@ -239,13 +239,13 @@ const translateWithOpenRouter = async (
   signal?: AbortSignal,
 ): Promise<string> => {
   // Load user settings
-  const settings = await browser.storage.local.get(['openRouterApiKey', 'openRouterModelId']);
+  const settings = await browser.storage.local.get(["openRouterApiKey", "openRouterModelId"]);
   const userApiKey = settings.openRouterApiKey as string | undefined;
   const userModelId = settings.openRouterModelId as string | undefined;
 
   // @ts-ignore
   const envApiKey = import.meta.env?.WXT_OPENROUTER_API_KEY;
-  
+
   const apiKey = userApiKey || envApiKey;
 
   if (!apiKey) {

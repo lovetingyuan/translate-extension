@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { translateText } from '../../utils/translation';
-import Settings from './Settings';
+import { useState, useEffect, useRef } from "react";
+import { translateText } from "../../utils/translation";
+import Settings from "./Settings";
 import {
   SunIcon,
   MoonIcon,
@@ -11,19 +11,21 @@ import {
   CheckIcon,
   GithubIcon,
   SettingsIcon,
-} from '../components/icons';
+} from "../components/icons";
 
 function App() {
-  const [inputText, setInputText] = useState('');
-  const [translation, setTranslation] = useState('');
-  const [direction, setDirection] = useState<'zh' | 'en'>('zh');
-  const [targetLang, setTargetLang] = useState<'zh' | 'en'>('en');
+  const [inputText, setInputText] = useState("");
+  const [translation, setTranslation] = useState("");
+  const [direction, setDirection] = useState<"zh" | "en">("zh");
+  const [targetLang, setTargetLang] = useState<"zh" | "en">("en");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [selectedService, setSelectedService] = useState<'google' | 'microsoft' | 'tencent' | 'openrouter'>('google');
-  const [theme, setTheme] = useState('lemonade');
+  const [selectedService, setSelectedService] = useState<
+    "google" | "microsoft" | "tencent" | "openrouter"
+  >("google");
+  const [theme, setTheme] = useState("lemonade");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -31,18 +33,18 @@ function App() {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       // Focus textarea when '/' is pressed and no input is focused
       if (
-        e.key === '/' &&
-        document.activeElement?.tagName !== 'TEXTAREA' &&
-        document.activeElement?.tagName !== 'INPUT'
+        e.key === "/" &&
+        document.activeElement?.tagName !== "TEXTAREA" &&
+        document.activeElement?.tagName !== "INPUT"
       ) {
         e.preventDefault();
         textareaRef.current?.focus();
       }
     };
 
-    window.addEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener("keydown", handleGlobalKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleGlobalKeyDown);
+      window.removeEventListener("keydown", handleGlobalKeyDown);
       // Stop speech if popup is closed
       window.speechSynthesis.cancel();
     };
@@ -56,16 +58,16 @@ function App() {
 
   useEffect(() => {
     // Load saved settings on mount
-    browser.storage.local.get(['selectedService', 'theme']).then((res) => {
-      if (typeof res.selectedService === 'string') {
+    browser.storage.local.get(["selectedService", "theme"]).then((res) => {
+      if (typeof res.selectedService === "string") {
         setSelectedService(res.selectedService as any);
       }
-      if (typeof res.theme === 'string') {
+      if (typeof res.theme === "string") {
         setTheme(res.theme);
         // Apply theme to both html and body to ensure coverage
-        document.documentElement.setAttribute('data-theme', res.theme);
+        document.documentElement.setAttribute("data-theme", res.theme);
       } else {
-        document.documentElement.setAttribute('data-theme', 'lemonade');
+        document.documentElement.setAttribute("data-theme", "lemonade");
       }
     });
   }, []);
@@ -82,7 +84,7 @@ function App() {
   };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newLang = e.target.checked ? 'zh' : 'en';
+    const newLang = e.target.checked ? "zh" : "en";
     setTargetLang(newLang);
 
     // Auto-retranslate if there's text
@@ -92,32 +94,32 @@ function App() {
   };
 
   const toggleTheme = async () => {
-    const newTheme = theme === 'lemonade' ? 'dracula' : 'lemonade';
+    const newTheme = theme === "lemonade" ? "dracula" : "lemonade";
     setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
     await browser.storage.local.set({ theme: newTheme });
   };
 
   const handleTranslate = async (
-    serviceOverride?: 'google' | 'microsoft' | 'tencent' | 'openrouter',
-    targetLangOverride?: 'zh' | 'en'
+    serviceOverride?: "google" | "microsoft" | "tencent" | "openrouter",
+    targetLangOverride?: "zh" | "en",
   ) => {
     if (!inputText.trim()) return;
 
     setIsLoading(true);
-    setError('');
-    setTranslation('');
+    setError("");
+    setTranslation("");
 
     try {
       const result = await translateText(
         inputText,
         serviceOverride || selectedService,
-        targetLangOverride || targetLang
+        targetLangOverride || targetLang,
       );
       setTranslation(result.translation);
       setDirection(result.direction);
     } catch (err: any) {
-      setError(err.message || '翻译出错');
+      setError(err.message || "翻译出错");
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +146,7 @@ function App() {
     // Target language is the result of the translation
     // If direction is en-to-zh, speak zh
     // If direction is zh-to-en, speak en
-    utterance.lang = direction === 'zh' ? 'zh-CN' : 'en-US';
+    utterance.lang = direction === "zh" ? "zh-CN" : "en-US";
 
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
@@ -154,7 +156,7 @@ function App() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && e.shiftKey) {
+    if (e.key === "Enter" && e.shiftKey) {
       e.preventDefault();
       handleTranslate();
     }
@@ -169,10 +171,22 @@ function App() {
       <div className="flex items-center justify-between px-4 py-2 shrink-0">
         <span className="text-base font-semibold opacity-80">中英直译助手</span>
         <div className="flex gap-1">
-          <button className="btn btn-ghost btn-circle btn-xs" onClick={toggleTheme} title="切换主题">
-            {theme === 'lemonade' ? <SunIcon className="h-3 w-3" /> : <MoonIcon className="h-3 w-3" />}
+          <button
+            className="btn btn-ghost btn-circle btn-xs"
+            onClick={toggleTheme}
+            title="切换主题"
+          >
+            {theme === "lemonade" ? (
+              <SunIcon className="h-3 w-3" />
+            ) : (
+              <MoonIcon className="h-3 w-3" />
+            )}
           </button>
-          <button className="btn btn-ghost btn-circle btn-xs" onClick={() => setIsSettingsOpen(true)} title="设置">
+          <button
+            className="btn btn-ghost btn-circle btn-xs"
+            onClick={() => setIsSettingsOpen(true)}
+            title="设置"
+          >
             <SettingsIcon className="h-3 w-3" />
           </button>
         </div>
@@ -185,7 +199,7 @@ function App() {
             autoFocus
             ref={textareaRef}
             className="textarea textarea-bordered w-full h-28 resize-none transition-colors"
-            placeholder={`输入要翻译的文字到${targetLang === 'zh' ? '中文' : '英文'}... (Shift+Enter 快速翻译)`}
+            placeholder={`输入要翻译的文字到${targetLang === "zh" ? "中文" : "英文"}... (Shift+Enter 快速翻译)`}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -209,11 +223,11 @@ function App() {
             onClick={() => handleTranslate()}
             disabled={isLoading || !inputText.trim()}
           >
-            {isLoading ? <span className="loading loading-spinner loading-sm"></span> : '翻译'}
+            {isLoading ? <span className="loading loading-spinner loading-sm"></span> : "翻译"}
           </button>
           <label className="swap swap-flip" title="切换目标语言">
             {/* this hidden checkbox controls the state */}
-            <input type="checkbox" checked={targetLang === 'zh'} onChange={handleLanguageChange} />
+            <input type="checkbox" checked={targetLang === "zh"} onChange={handleLanguageChange} />
             <div className="badge badge-accent swap-on text-sm">中</div>
             <div className="badge badge-info swap-off text-xs">EN</div>
           </label>
@@ -235,13 +249,21 @@ function App() {
             </div>
             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                className={`btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0 ${isSpeaking ? 'text-primary' : ''}`}
+                className={`btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0 ${isSpeaking ? "text-primary" : ""}`}
                 onClick={handleSpeak}
-                title={isSpeaking ? '停止朗读' : '朗读'}
+                title={isSpeaking ? "停止朗读" : "朗读"}
               >
-                {isSpeaking ? <StopIcon className="h-3 w-3" /> : <SpeakerIcon className="h-3 w-3" />}
+                {isSpeaking ? (
+                  <StopIcon className="h-3 w-3" />
+                ) : (
+                  <SpeakerIcon className="h-3 w-3" />
+                )}
               </button>
-              <button className="btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0" onClick={handleCopy} title="复制">
+              <button
+                className="btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0"
+                onClick={handleCopy}
+                title="复制"
+              >
                 {copied ? (
                   <CheckIcon className="h-3 w-3 text-green-500 shrink-0" />
                 ) : (

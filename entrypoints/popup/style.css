@@ -1,13 +1,15 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: lemonade --default, dracula --prefersdark;
+  themes:
+    lemonade --default,
+    dracula --prefersdark;
 }
 
 @custom-variant dark (&:where([data-theme=dracula], [data-theme=dracula] *));
 
 @theme {
-  --font-sans: 'Inter', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif';
+  --font-sans: "Inter", "system-ui", "Avenir", "Helvetica", "Arial", "sans-serif";
 }
 
 @layer base {

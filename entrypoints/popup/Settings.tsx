@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react';
-import { CheckIcon } from '../components/icons';
+import { useState, useEffect } from "react";
+import { CheckIcon } from "../components/icons";
 
 interface SettingsProps {
   onClose: () => void;
 }
 
 export default function Settings({ onClose }: SettingsProps) {
-  const [apiKey, setApiKey] = useState('');
-  const [modelId, setModelId] = useState('');
+  const [apiKey, setApiKey] = useState("");
+  const [modelId, setModelId] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
-    browser.storage.local.get(['openRouterApiKey', 'openRouterModelId']).then((res) => {
+    browser.storage.local.get(["openRouterApiKey", "openRouterModelId"]).then((res) => {
       if (res.openRouterApiKey) setApiKey(res.openRouterApiKey as string);
       if (res.openRouterModelId) setModelId(res.openRouterModelId as string);
     });

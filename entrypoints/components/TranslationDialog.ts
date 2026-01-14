@@ -506,7 +506,7 @@ export class TranslationDialog {
                   this.isReadingOriginal ? '⏹' : '🔊'
                 }</button>
                 <button class="icon-btn" id="youdao-btn" title="在有道词典中查看">
-                  <img width="16" height="16" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAACXBIWXMAACE4AAAhOAFFljFgAAAAMFBMVEVHcEz9ACL8ABf/ABf8ABj8ABn8ABn8ABn9ABn8ABn9ABn8ABn8ABr9ABn8ARn8ARrLvc86AAAAD3RSTlMABRAbKT1RYniLnrDG3/OSMDXgAAABNUlEQVR42s3Wy3KGIAwF4BPuCiTv/7btIkrHYDr/qv2WKpAcM4741+qhStArsemVlrERTlEdKrGoio04ze0qagZs3EecUEEuCRuHqAOK5BLdE6o5gQkWDVEZKoua2AhTFEGVFdxGsts1UQ3W2m7g0kUVbDSTKqYfkjk/sBcSbEhpFblB93bh05Dow5C6U6Qf0uo5YaObBYc/3OPZQ+ZVpLtAGgGgPOVywF8gvdV2ylLh9mBleClZHLET5c3A3vHc2O8ZiEN+6kNUwovY5TZrmqYiK/fJ32Yv5E/eQiHGQADCNNNu+V81XzEvwZen6cBDhUUNwotYcEkrXs54k+XIMcZU2pAbV6iX2WMW9XsDp1gNjiHKr2dheRgJnvh8vMJHQxbulfCb0AaLCM9xlEi4+Yj+/o/kCxZXLCNxyRVUAAAAAElFTkSuQmCC">
+                  <img width="14" height="14" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAACXBIWXMAACE4AAAhOAFFljFgAAAAMFBMVEVHcEz9ACL8ABf/ABf8ABj8ABn8ABn8ABn9ABn8ABn9ABn8ABn8ABr9ABn8ARn8ARrLvc86AAAAD3RSTlMABRAbKT1RYniLnrDG3/OSMDXgAAABNUlEQVR42s3Wy3KGIAwF4BPuCiTv/7btIkrHYDr/qv2WKpAcM4741+qhStArsemVlrERTlEdKrGoio04ze0qagZs3EecUEEuCRuHqAOK5BLdE6o5gQkWDVEZKoua2AhTFEGVFdxGsts1UQ3W2m7g0kUVbDSTKqYfkjk/sBcSbEhpFblB93bh05Dow5C6U6Qf0uo5YaObBYc/3OPZQ+ZVpLtAGgGgPOVywF8gvdV2ylLh9mBleClZHLET5c3A3vHc2O8ZiEN+6kNUwovY5TZrmqYiK/fJ32Yv5E/eQiHGQADCNNNu+V81XzEvwZen6cBDhUUNwotYcEkrXs54k+XIMcZU2pAbV6iX2WMW9XsDp1gNjiHKr2dheRgJnvh8vMJHQxbulfCb0AaLCM9xlEi4+Yj+/o/kCxZXLCNxyRVUAAAAAElFTkSuQmCC">
                 </button>
               </div>
             </div>
@@ -532,9 +532,9 @@ export class TranslationDialog {
               ${
                 this.status === 'loading'
                   ? `
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <div style="width: 16px; height: 16px; border: 2px solid var(--text-sub); border-top-color: var(--text-color); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-                  <span>正在翻译...</span>
+                <div style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%;">
+                  <div style="width: 16px; height: 16px; border: 2px solid var(--border-color); border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                  <span style="color: var(--text-sub); font-size: 14px;">正在翻译...</span>
                 </div>
               `
                   : this.status === 'success'

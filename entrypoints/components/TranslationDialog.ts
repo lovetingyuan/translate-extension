@@ -237,15 +237,61 @@ export class TranslationDialog {
     }
   }
 
-  private render() {
-    const bgColor = "#222222";
+  private toggleTheme() {
+    this.theme = this.theme === "light" ? "dark" : "light";
+    browser.storage.local.set({ theme: this.theme });
+    this.render();
+  }
 
+  private render() {
     if (!this.dialog) {
       this.shadowRoot.innerHTML = `
         <style>
+          :host {
+            --dialog-bg: #222222;
+            --text-color: #ffffff;
+            --text-sub: rgba(255, 255, 255, 0.8);
+            --box-bg-1: rgba(255, 255, 255, 0.1);
+            --box-bg-2: rgba(255, 255, 255, 0.15);
+            --btn-bg: rgba(255, 255, 255, 0.2);
+            --btn-hover: rgba(255, 255, 255, 0.4);
+            --border-color: rgba(255, 255, 255, 0.2);
+            --scrollbar-track: rgba(255, 255, 255, 0.05);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+            --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+            --select-option-bg: #333;
+            --select-option-text: white;
+            --active-btn-bg: rgba(255, 255, 255, 0.3);
+            --active-btn-border: rgba(255, 255, 255, 0.5);
+            --icon-btn-hover: rgba(255, 255, 255, 0.4);
+            --close-btn-hover: rgba(255, 255, 255, 0.4);
+          }
+
+          dialog.light-theme {
+            --dialog-bg: #ffffff;
+            --text-color: #333333;
+            --text-sub: rgba(0, 0, 0, 0.7);
+            --box-bg-1: #f3f4f6;
+            --box-bg-2: #e5e7eb;
+            --btn-bg: rgba(0, 0, 0, 0.05);
+            --btn-hover: rgba(0, 0, 0, 0.1);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --scrollbar-track: rgba(0, 0, 0, 0.05);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+            --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+            --select-option-bg: #ffffff;
+            --select-option-text: #333333;
+            --active-btn-bg: rgba(0, 0, 0, 0.1);
+            --active-btn-border: rgba(0, 0, 0, 0.2);
+            --icon-btn-hover: rgba(0, 0, 0, 0.1);
+            --close-btn-hover: rgba(0, 0, 0, 0.1);
+          }
+
           dialog {
+            background: var(--dialog-bg);
+            color: var(--text-color);
             border: none; border-radius: 12px; padding: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            max-width: 500px; width: 90%; color: white;
+            max-width: 500px; width: 90%;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             position: fixed; margin: auto; inset: 0;
             user-select: none; -webkit-user-select: none; outline: none;
@@ -291,37 +337,37 @@ export class TranslationDialog {
           .app-icon { width: 20px; height: 20px; border-radius: 6px; overflow: hidden; display: flex; }
           .app-icon svg { width: 100%; height: 100%; }
           .header h3 { margin: 0; font-size: 18px; font-weight: 600; }
-          .expand-btn {
-            background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px;
+          .expand-btn, .theme-btn {
+            background: var(--btn-bg); border: none; color: var(--text-color); width: 28px; height: 28px;
             border-radius: 50%; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center;
             transition: background 0.2s;
           }
-          .expand-btn:hover { background: rgba(255,255,255,0.4); }
+          .expand-btn:hover, .theme-btn:hover { background: var(--btn-hover); }
           .close-btn {
-            background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px;
+            background: var(--btn-bg); border: none; color: var(--text-color); width: 28px; height: 28px;
             border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
             transition: background 0.2s;
           }
-          .close-btn:hover { background: rgba(255,255,255,0.4); }
+          .close-btn:hover { background: var(--close-btn-hover); }
           .settings-row { display: flex; gap: 16px; margin-bottom: 16px; flex-shrink: 0; }
           .setting-item { flex: 1; }
-          .label { font-size: 12px; opacity: 0.8; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px; }
+          .label { font-size: 12px; opacity: 0.8; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 1px; color: var(--text-sub); }
           .direction-btns { display: flex; gap: 8px; }
           .direction-btn {
-            flex: 1; border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer;
-            font-size: 14px; font-weight: 500; transition: all 0.2s; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            flex: 1; border: none; color: var(--text-color); padding: 6px 12px; border-radius: 6px; cursor: pointer;
+            font-size: 14px; font-weight: 500; transition: all 0.2s; background: var(--btn-bg); border: 1px solid var(--border-color);
           }
-          .direction-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); }
-          .direction-btn.active { background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.5); }
-          .direction-btn.active:hover { background: rgba(255,255,255,0.4); }
+          .direction-btn:hover { background: var(--btn-hover); border-color: var(--text-sub); }
+          .direction-btn.active { background: var(--active-btn-bg); border: 1px solid var(--active-btn-border); }
+          .direction-btn.active:hover { background: var(--btn-hover); }
           select {
-            width: 100%; padding: 8px 12px; border-radius: 6px; border: none; background: rgba(255,255,255,0.2);
-            color: white; font-size: 14px; cursor: pointer; outline: none;
+            width: 100%; padding: 8px 12px; border-radius: 6px; border: none; background: var(--btn-bg);
+            color: var(--text-color); font-size: 14px; cursor: pointer; outline: none;
             user-select: none;
           }
-          select option { background: #333; color: white; }
+          select option { background: var(--select-option-bg); color: var(--select-option-text); }
           .content-box {
-            background: rgba(255,255,255,0.1);
+            background: var(--box-bg-1);
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 16px;
@@ -336,7 +382,7 @@ export class TranslationDialog {
             margin-bottom: 12px;
           }
           .content-box.translation {
-            background: rgba(255,255,255,0.15);
+            background: var(--box-bg-2);
             margin-bottom: 0;
             flex: 1;
             min-height: 0;
@@ -344,8 +390,8 @@ export class TranslationDialog {
             flex-direction: column;
             overflow: hidden;
           }
-          .box-header { font-size: 12px; opacity: 0.8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-          .text-content { font-size: 16px; line-height: 1.5; user-select: text; -webkit-user-select: text; word-break: break-word; flex-grow: 1; overflow-y: auto; }
+          .box-header { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+          .text-content { font-size: 16px; line-height: 1.5; user-select: text; -webkit-user-select: text; word-break: break-word; flex-grow: 1; overflow-y: auto; color: var(--text-color); }
           .text-content.scrollable {
             overflow-y: auto;
           }
@@ -359,19 +405,19 @@ export class TranslationDialog {
           }
           /* Custom scrollbar */
           .text-content::-webkit-scrollbar { width: 6px; }
-          .text-content::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
-          .text-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-          .text-content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+          .text-content::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px; }
+          .text-content::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+          .text-content::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
           .icon-btn {
-            background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px;
+            background: var(--btn-bg); border: none; color: var(--text-color); width: 24px; height: 24px;
             border-radius: 50%; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;
             transition: all 0.2s;
           }
-          .icon-btn:hover:not(:disabled) { background: rgba(255,255,255,0.4); }
-          .icon-btn:active:not(:disabled) { background: rgba(255,255,255,0.5); }
+          .icon-btn:hover:not(:disabled) { background: var(--icon-btn-hover); }
+          .icon-btn:active:not(:disabled) { background: var(--active-btn-bg); }
           .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
           .footer-btn { flex: 1; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
-          .btn-outline { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; }
+          .btn-outline { background: var(--btn-bg); border: 1px solid var(--border-color); color: var(--text-color); }
           .btn-primary { background: white; color: #667eea; }
           @keyframes spin { to { transform: rotate(360deg); } }
           #translation-body {
@@ -392,7 +438,12 @@ export class TranslationDialog {
       this.dialog = this.shadowRoot.getElementById("translation-dialog") as HTMLDialogElement;
     }
 
-    this.dialog.style.background = bgColor;
+    if (this.theme === "light") {
+      this.dialog.classList.add("light-theme");
+    } else {
+      this.dialog.classList.remove("light-theme");
+    }
+
     if (this.isDialogExpanded) {
       this.dialog.classList.add("expanded");
     } else {
@@ -408,6 +459,9 @@ export class TranslationDialog {
               <h3>${this.status === "error" && !this.translation ? "翻译失败" : "中英直译"}</h3>
             </div>
             <div style="display: flex; gap: 8px;">
+              <button class="theme-btn" id="theme-btn" title="切换主题">
+                ${this.theme === "light" ? "🌙" : "☀️"}
+              </button>
               <button class="expand-btn" id="expand-btn" title="${
                 this.isDialogExpanded ? "还原" : "全屏"
               }">
@@ -477,7 +531,7 @@ export class TranslationDialog {
                 this.status === "loading"
                   ? `
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <div style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                  <div style="width: 16px; height: 16px; border: 2px solid var(--text-sub); border-top-color: var(--text-color); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
                   <span>正在翻译...</span>
                 </div>
               `
@@ -507,6 +561,13 @@ export class TranslationDialog {
       expandBtn.onclick = () => {
         this.isDialogExpanded = !this.isDialogExpanded;
         this.render();
+      };
+    }
+
+    const themeBtn = this.shadowRoot.getElementById("theme-btn");
+    if (themeBtn) {
+      themeBtn.onclick = () => {
+        this.toggleTheme();
       };
     }
 

@@ -9,7 +9,7 @@ export default defineConfig({
     name: "中英直译",
     description:
       "A browser extension for bidirectional Chinese-English translation via context menus.",
-    permissions: ["contextMenus", "activeTab", "scripting", "storage"],
+    permissions: ["contextMenus", "storage"],
     host_permissions: ["*://*/*"],
     action: {
       default_popup: "popup.html",

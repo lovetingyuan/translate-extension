@@ -339,8 +339,8 @@ export class TranslationDialog {
           .header h3 { margin: 0; font-size: 18px; font-weight: 600; }
           .expand-btn, .theme-btn {
             background: var(--btn-bg); border: none; color: var(--text-color); width: 28px; height: 28px;
-            border-radius: 50%; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s;
+            border-radius: 50%; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s; font-weight: bold;
           }
           .expand-btn:hover, .theme-btn:hover { background: var(--btn-hover); }
           .close-btn {
@@ -460,7 +460,7 @@ export class TranslationDialog {
             </div>
             <div style="display: flex; gap: 8px;">
               <button class="theme-btn" id="theme-btn" title="切换主题">
-                ${this.theme === 'light' ? '🌙' : '☀️'}
+                ${this.theme === 'dark' ? '🌙' : '☀️'}
               </button>
               <button class="expand-btn" id="expand-btn" title="${
                 this.isDialogExpanded ? '还原' : '全屏'

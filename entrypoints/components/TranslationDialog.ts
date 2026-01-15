@@ -14,7 +14,7 @@ export class TranslationDialog {
   private translation: string = "";
   private direction: "zh" | "en" = "zh";
   private service: "google" | "microsoft" | "tencent" | "openrouter" = "google";
-  private theme: "light" | "dark" = "dark";
+  private theme: "light" | "dark" = "light";
   private status: "loading" | "success" | "error" = "loading";
   private errorMessage: string = "";
   private isReadingOriginal: boolean = false;
@@ -109,7 +109,7 @@ export class TranslationDialog {
       const result = await browser.storage.local.get(["selectedService", "theme"]);
       this.service =
         (result.selectedService as "google" | "microsoft" | "tencent" | "openrouter") || "google";
-      this.theme = (result.theme as "light" | "dark") || "dark";
+      this.theme = (result.theme as "light" | "dark") || "light";
     } catch (err) {
       if (import.meta.env.DEV) console.error("Failed to load settings:", err);
     }

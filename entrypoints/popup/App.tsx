@@ -25,7 +25,7 @@ function App() {
   const [selectedService, setSelectedService] = useState<
     'google' | 'microsoft' | 'tencent' | 'openrouter'
   >('google')
-  const [theme, setTheme] = useState('lemonade')
+  const [theme, setTheme] = useState('light')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -67,7 +67,7 @@ function App() {
         // Apply theme to both html and body to ensure coverage
         document.documentElement.setAttribute('data-theme', res.theme)
       } else {
-        document.documentElement.setAttribute('data-theme', 'lemonade')
+        document.documentElement.setAttribute('data-theme', 'light')
       }
     })
   }, [])
@@ -94,7 +94,7 @@ function App() {
   }
 
   const toggleTheme = async () => {
-    const newTheme = theme === 'lemonade' ? 'dracula' : 'lemonade'
+    const newTheme = theme === 'light' ? 'dracula' : 'light'
     setTheme(newTheme)
     document.documentElement.setAttribute('data-theme', newTheme)
     await browser.storage.local.set({ theme: newTheme })
@@ -177,7 +177,7 @@ function App() {
             onClick={toggleTheme}
             title="切换主题"
           >
-            {theme === 'lemonade' ? (
+            {theme === 'light' ? (
               <SunIcon className="h-3 w-3" />
             ) : (
               <MoonIcon className="h-3 w-3" />

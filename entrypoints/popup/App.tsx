@@ -118,10 +118,10 @@ function App() {
       )
       setTranslation(result.translation)
       setDirection(result.direction)
+      setIsLoading(false)
     } catch (err: any) {
       if (err.name === 'AbortError') return
       setError(err.message || '翻译出错')
-    } finally {
       setIsLoading(false)
     }
   }

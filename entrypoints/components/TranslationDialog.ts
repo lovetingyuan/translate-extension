@@ -229,8 +229,13 @@ export class TranslationDialog {
       }
     } catch (err: any) {
       if (
-        err.message &&
-        (err.message.includes("AbortError") || err.message.includes("message channel closed"))
+        (err && err.name === "AbortError") ||
+        (err &&
+          err.message &&
+          (err.message.includes("AbortError") ||
+            err.message.toLowerCase().includes("aborted") ||
+            err.message.includes("message channel closed") ||
+            err.message.includes("The message port closed")))
       )
         return;
       this.updateError("翻译失败，请重试");

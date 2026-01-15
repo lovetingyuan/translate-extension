@@ -59,6 +59,7 @@ export class TranslationDialog {
   }
 
   public updateError(message: string) {
+    if (this.shouldIgnoreError(message)) return;
     this.status = "error";
     this.errorMessage = message;
     this.ensureInDocument();
@@ -67,12 +68,24 @@ export class TranslationDialog {
   }
 
   public showError(message: string) {
+    if (this.shouldIgnoreError(message)) return;
     this.status = "error";
     this.errorMessage = message;
     this.translation = "";
     this.ensureInDocument();
     this.render();
     this.presentDialog();
+  }
+
+  private shouldIgnoreError(message: string): boolean {
+    if (!message) return false;
+    const lower = message.toLowerCase();
+    return (
+      lower.includes("abort") ||
+      lower.includes("cancel") ||
+      lower.includes("signal is aborted") ||
+      lower.includes("the user aborted a request")
+    );
   }
 
   public showDetail(originalText: string, translation: string, direction?: "zh" | "en") {

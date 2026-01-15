@@ -183,7 +183,6 @@ a {
 /* Hero Media (Video) Area */
 .hero-media-container {
     margin-top: 40px;
-    perspective: 1000px;
     max-width: 900px;
     margin-left: auto;
     margin-right: auto;
@@ -195,13 +194,11 @@ a {
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border);
-    transform: rotateX(2deg);
-    transition: transform 0.5s ease;
     background: white; /* Placeholder background */
 }
 
 .hero-video:hover {
-    transform: rotateX(0deg) scale(1.02);
+    transform: none;
 }
 
 /* Features */

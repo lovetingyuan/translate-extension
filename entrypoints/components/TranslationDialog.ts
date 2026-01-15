@@ -225,6 +225,13 @@ export class TranslationDialog {
       if (response.success) {
         this.updateSuccess(response.translation, this.direction);
       } else if (!response.isAbort) {
+        if (
+          response.error &&
+          (response.error.includes("AbortError") ||
+            response.error.toLowerCase().includes("aborted") ||
+            response.error.includes("signal is aborted"))
+        )
+          return;
         this.updateError(response.error || "翻译失败");
       }
     } catch (err: any) {

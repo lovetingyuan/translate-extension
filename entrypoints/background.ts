@@ -145,7 +145,11 @@ export default defineBackground(() => {
           sendResponse({ success: true, translation: res.translation, direction: res.direction });
         })
         .catch((err) => {
-          if (err.name === "AbortError") {
+          if (
+            err.name === "AbortError" ||
+            err.message?.includes("signal is aborted") ||
+            err.message?.includes("aborted")
+          ) {
             sendResponse({ success: false, error: "Aborted", isAbort: true });
             return;
           }

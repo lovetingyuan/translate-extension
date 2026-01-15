@@ -28,7 +28,7 @@
   select,
   button {
     outline-offset: 0 !important;
-    outline-color: color-mix(in srgb, var(--color-primary, var(--p)), transparent 50%) !important;
+    outline-color: color-mix(in srgb, var(--color-primary, var(--p)), transparent 60%) !important;
   }
 }
 

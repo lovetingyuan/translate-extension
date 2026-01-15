@@ -294,7 +294,7 @@ export class TranslationDialog {
             max-width: 500px; width: 90%;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             position: fixed; margin: auto; inset: 0;
-            user-select: none; -webkit-user-select: none; outline: none;
+            user-select: none; -webkit-user-select: none;
             max-height: 85vh; overflow: hidden !important;
             transition: all 0.3s ease;
           }
@@ -360,10 +360,30 @@ export class TranslationDialog {
           .direction-btn:hover { background: var(--btn-hover); border-color: var(--text-sub); }
           .direction-btn.active { background: var(--active-btn-bg); border: 1px solid var(--active-btn-border); }
           .direction-btn.active:hover { background: var(--btn-hover); }
+          .select-wrapper {
+            position: relative;
+            width: 100%;
+          }
           select {
-            width: 100%; padding: 8px 12px; border-radius: 6px; border: none; background: var(--btn-bg);
-            color: var(--text-color); font-size: 14px; cursor: pointer; outline: none;
+            width: 100%; padding: 8px 30px 8px 12px; border-radius: 6px; border: none; background: var(--btn-bg);
+            color: var(--text-color); font-size: 14px; cursor: pointer;
             user-select: none;
+            appearance: none;
+            -webkit-appearance: none;
+          }
+          .select-wrapper::after {
+            content: "";
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid var(--text-sub);
+            pointer-events: none;
+            opacity: 0.8;
           }
           select option { background: var(--select-option-bg); color: var(--select-option-text); }
           .content-box {
@@ -482,20 +502,22 @@ export class TranslationDialog {
               </div>
             </div>
             <div class="setting-item" style="width: 50%;">
-              <select id="service-select">
-                <option value="google" ${
-                  this.service === "google" ? "selected" : ""
-                }>Google 翻译</option>
-                <option value="microsoft" ${
-                  this.service === "microsoft" ? "selected" : ""
-                }>Microsoft 翻译</option>
-                <option value="tencent" ${
-                  this.service === "tencent" ? "selected" : ""
-                }>腾讯翻译</option>
-                <option value="openrouter" ${
-                  this.service === "openrouter" ? "selected" : ""
-                }>OpenRouter</option>
-              </select>
+              <div class="select-wrapper">
+                <select id="service-select">
+                  <option value="google" ${
+                    this.service === "google" ? "selected" : ""
+                  }>Google 翻译</option>
+                  <option value="microsoft" ${
+                    this.service === "microsoft" ? "selected" : ""
+                  }>Microsoft 翻译</option>
+                  <option value="tencent" ${
+                    this.service === "tencent" ? "selected" : ""
+                  }>腾讯翻译</option>
+                  <option value="openrouter" ${
+                    this.service === "openrouter" ? "selected" : ""
+                  }>OpenRouter</option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="content-box original">

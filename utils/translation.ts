@@ -287,7 +287,7 @@ Translate the following user input exactly into ${lang}.`;
       model: model,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: text },
+        { role: "user", content: `Translate to ${lang}:\n"${text}"` },
       ],
     }),
     signal,

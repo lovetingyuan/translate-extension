@@ -211,7 +211,7 @@ function App() {
         {/* Action Section */}
         <div className="flex gap-2">
           <select
-            className="select select-bordered select-sm focus:border-primary focus:outline-none flex-1"
+            className="select select-bordered select-sm flex-1"
             value={selectedService}
             onChange={handleServiceChange}
           >

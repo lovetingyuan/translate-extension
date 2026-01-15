@@ -285,9 +285,10 @@ Translate the following user input exactly into ${lang}.`;
     },
     body: JSON.stringify({
       model: model,
+      temperature: 0.1,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Translate to ${lang}:\n"${text}"` },
+        { role: "user", content: `Translate the following text to ${lang}:\n"""\n${text}\n"""` },
       ],
     }),
     signal,

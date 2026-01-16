@@ -49,9 +49,14 @@ export class TranslationDialog {
     });
   }
 
+  private decodeHtmlEntities(text: string): string {
+    const doc = new DOMParser().parseFromString(text, "text/html");
+    return doc.documentElement.textContent || text;
+  }
+
   public updateSuccess(translation: string, direction?: "zh" | "en") {
     this.status = "success";
-    this.translation = translation;
+    this.translation = this.decodeHtmlEntities(translation);
     if (direction) this.direction = direction;
     this.ensureInDocument();
     this.render();
@@ -78,7 +83,7 @@ export class TranslationDialog {
   public showDetail(originalText: string, translation: string, direction?: "zh" | "en") {
     this.status = "success";
     this.originalText = originalText;
-    this.translation = translation;
+    this.translation = this.decodeHtmlEntities(translation);
     this.isDialogExpanded = false;
     this.direction = direction || detectDirection(originalText);
     this.loadSettings().then(() => {

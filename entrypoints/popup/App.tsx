@@ -100,6 +100,11 @@ function App() {
     await browser.storage.local.set({ theme: newTheme })
   }
 
+  const decodeHtmlEntities = (text: string): string => {
+    const doc = new DOMParser().parseFromString(text, 'text/html')
+    return doc.documentElement.textContent || text
+  }
+
   const handleTranslate = async (
     serviceOverride?: 'google' | 'microsoft' | 'tencent' | 'openrouter',
     targetLangOverride?: 'zh' | 'en'
@@ -116,7 +121,7 @@ function App() {
         serviceOverride || selectedService,
         targetLangOverride || targetLang
       )
-      setTranslation(result.translation)
+      setTranslation(decodeHtmlEntities(result.translation))
       setDirection(result.direction)
       setIsLoading(false)
     } catch (err: any) {
@@ -164,7 +169,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 text-base-content flex flex-col font-sans relative shadow-inner">
+    <div className="min-h-screen bg-base-100 text-base-content flex flex-col font-sans relative">
       {/* Settings Overlay */}
       {isSettingsOpen && <Settings onClose={() => setIsSettingsOpen(false)} />}
 
@@ -177,11 +182,7 @@ function App() {
             onClick={toggleTheme}
             title="切换主题"
           >
-            {theme === 'light' ? (
-              <SunIcon className="h-3 w-3" />
-            ) : (
-              <MoonIcon className="h-3 w-3" />
-            )}
+            {theme === 'light' ? <SunIcon className="h-3 w-3" /> : <MoonIcon className="h-3 w-3" />}
           </button>
           <button
             className="btn btn-ghost btn-circle btn-xs"
@@ -282,7 +283,12 @@ function App() {
 
       {/* Footer */}
       <footer className="px-4 py-2 bg-base-200 text-base-content border-t border-base-300 shrink-0 flex justify-between items-center">
-        <p className="text-[10px] opacity-50">v{__APP_VERSION__} © 2026 Translate Extension</p>
+        <p className="text-[10px] opacity-50">
+          v{__APP_VERSION__} © 2026
+          <a href="https://translate-extension.tingyuan.in" target="_blank" className="ml-1 link">
+            Translate Extension
+          </a>
+        </p>
         <a
           href="https://github.com/lovetingyuan/translate-extension"
           target="_blank"

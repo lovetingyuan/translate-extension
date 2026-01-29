@@ -1,281 +1,281 @@
-import { browser } from 'wxt/browser'
-import { detectDirection } from '../../utils/translation'
-import iconSvg from '../../assets/icon.svg?raw'
+import { browser } from "wxt/browser";
+import { detectDirection } from "../../utils/translation";
+import iconSvg from "../../assets/icon.svg?raw";
 
 /**
  * TranslationDialog Class
  * Encapsulates the translation result UI and interactions using Shadow DOM.
  */
 export class TranslationDialog {
-  private container: HTMLElement
-  private shadowRoot: ShadowRoot
-  private dialog: HTMLDialogElement | null = null
-  private originalText: string = ''
-  private translation: string = ''
-  private direction: 'zh' | 'en' = 'zh'
-  private service: 'google' | 'microsoft' | 'tencent' | 'openrouter' = 'google'
-  private theme: 'light' | 'dark' = 'light'
-  private status: 'loading' | 'success' | 'error' = 'loading'
-  private errorMessage: string = ''
-  private isReadingOriginal: boolean = false
-  private isReadingTranslation: boolean = false
-  private isDialogExpanded: boolean = false
-  private isDragging: boolean = false
-  private dragOffset = { x: 0, y: 0 }
-  private dialogPos = { x: 0, y: 0 }
-  private closingTimer: number | null = null
-  public onClose?: () => void
+  private container: HTMLElement;
+  private shadowRoot: ShadowRoot;
+  private dialog: HTMLDialogElement | null = null;
+  private originalText: string = "";
+  private translation: string = "";
+  private direction: "zh" | "en" = "zh";
+  private service: "google" | "microsoft" | "tencent" | "openrouter" = "google";
+  private theme: "light" | "dark" = "light";
+  private status: "loading" | "success" | "error" = "loading";
+  private errorMessage: string = "";
+  private isReadingOriginal: boolean = false;
+  private isReadingTranslation: boolean = false;
+  private isDialogExpanded: boolean = false;
+  private isDragging: boolean = false;
+  private dragOffset = { x: 0, y: 0 };
+  private dialogPos = { x: 0, y: 0 };
+  private closingTimer: number | null = null;
+  public onClose?: () => void;
 
   constructor() {
     // 创建一个宿主元素并附加 Shadow DOM
-    this.container = document.createElement('div')
-    this.container.id = 'translation-extension-root'
-    this.shadowRoot = this.container.attachShadow({ mode: 'open' })
-    document.body.appendChild(this.container)
-    this.render()
+    this.container = document.createElement("div");
+    this.container.id = "translation-extension-root";
+    this.shadowRoot = this.container.attachShadow({ mode: "open" });
+    document.body.appendChild(this.container);
+    this.render();
   }
 
   /**
    * Initialize or update the dialog with loading state
    */
   public showLoading(originalText: string) {
-    this.status = 'loading'
-    this.originalText = originalText
-    this.translation = ''
-    this.isDialogExpanded = false
-    this.direction = detectDirection(originalText)
-    this.stopReading()
+    this.status = "loading";
+    this.originalText = originalText;
+    this.translation = "";
+    this.isDialogExpanded = false;
+    this.direction = detectDirection(originalText);
+    this.stopReading();
     // Reset position
     if (this.dialog) {
-      this.dialog.style.left = ''
-      this.dialog.style.top = ''
-      this.dialog.classList.remove('is-positioned')
+      this.dialog.style.left = "";
+      this.dialog.style.top = "";
+      this.dialog.classList.remove("is-positioned");
     }
     this.loadSettings().then(() => {
-      this.ensureInDocument()
-      this.render()
-      this.presentDialog()
-    })
+      this.ensureInDocument();
+      this.render();
+      this.presentDialog();
+    });
   }
 
   private decodeHtmlEntities(text: string): string {
-    const doc = new DOMParser().parseFromString(text, 'text/html')
-    return doc.documentElement.textContent || text
+    const doc = new DOMParser().parseFromString(text, "text/html");
+    return doc.documentElement.textContent || text;
   }
 
-  public updateSuccess(translation: string, direction?: 'zh' | 'en') {
-    this.status = 'success'
-    this.translation = this.decodeHtmlEntities(translation)
-    if (direction) this.direction = direction
-    this.ensureInDocument()
-    this.render()
-    this.presentDialog()
+  public updateSuccess(translation: string, direction?: "zh" | "en") {
+    this.status = "success";
+    this.translation = this.decodeHtmlEntities(translation);
+    if (direction) this.direction = direction;
+    this.ensureInDocument();
+    this.render();
+    this.presentDialog();
   }
 
   public updateError(message: string) {
-    this.status = 'error'
-    this.errorMessage = message
-    this.ensureInDocument()
-    this.render()
-    this.presentDialog()
+    this.status = "error";
+    this.errorMessage = message;
+    this.ensureInDocument();
+    this.render();
+    this.presentDialog();
   }
 
   public showError(message: string) {
-    this.status = 'error'
-    this.errorMessage = message
-    this.translation = ''
-    this.ensureInDocument()
-    this.render()
-    this.presentDialog()
+    this.status = "error";
+    this.errorMessage = message;
+    this.translation = "";
+    this.ensureInDocument();
+    this.render();
+    this.presentDialog();
   }
 
-  public showDetail(originalText: string, translation: string, direction?: 'zh' | 'en') {
-    this.status = 'success'
-    this.originalText = originalText
-    this.translation = this.decodeHtmlEntities(translation)
-    this.isDialogExpanded = false
-    this.direction = direction || detectDirection(originalText)
-    this.stopReading()
+  public showDetail(originalText: string, translation: string, direction?: "zh" | "en") {
+    this.status = "success";
+    this.originalText = originalText;
+    this.translation = this.decodeHtmlEntities(translation);
+    this.isDialogExpanded = false;
+    this.direction = direction || detectDirection(originalText);
+    this.stopReading();
     // Reset position
     if (this.dialog) {
-      this.dialog.style.left = ''
-      this.dialog.style.top = ''
-      this.dialog.classList.remove('is-positioned')
+      this.dialog.style.left = "";
+      this.dialog.style.top = "";
+      this.dialog.classList.remove("is-positioned");
     }
     this.loadSettings().then(() => {
-      this.ensureInDocument()
-      this.render()
-      this.presentDialog()
-    })
+      this.ensureInDocument();
+      this.render();
+      this.presentDialog();
+    });
   }
 
   private presentDialog() {
-    const isClosing = this.closingTimer !== null
+    const isClosing = this.closingTimer !== null;
     if (this.closingTimer) {
-      clearTimeout(this.closingTimer)
-      this.closingTimer = null
+      clearTimeout(this.closingTimer);
+      this.closingTimer = null;
     }
     if (this.dialog) {
       if (!this.dialog.open) {
-        this.dialog.showModal()
-        this.animateIn()
+        this.dialog.showModal();
+        this.animateIn();
       } else if (isClosing) {
-        this.animateIn()
+        this.animateIn();
       }
     }
   }
 
   private async loadSettings() {
     try {
-      const result = await browser.storage.local.get(['selectedService', 'theme'])
+      const result = await browser.storage.local.get(["selectedService", "theme"]);
       this.service =
-        (result.selectedService as 'google' | 'microsoft' | 'tencent' | 'openrouter') || 'google'
-      this.theme = (result.theme as 'light' | 'dark') || 'light'
+        (result.selectedService as "google" | "microsoft" | "tencent" | "openrouter") || "google";
+      this.theme = (result.theme as "light" | "dark") || "light";
     } catch (err) {
-      if (import.meta.env.DEV) console.error('Failed to load settings:', err)
+      if (import.meta.env.DEV) console.error("Failed to load settings:", err);
     }
   }
 
   private escapeHtml(text: string): string {
-    const div = document.createElement('div')
-    div.textContent = text
-    return div.innerHTML
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   private animateIn() {
-    if (!this.dialog) return
+    if (!this.dialog) return;
 
-    this.dialog.style.transform = 'scale(0.8)'
-    this.dialog.style.opacity = '0'
-    this.dialog.classList.remove('backdrop-active')
+    this.dialog.style.transform = "scale(0.8)";
+    this.dialog.style.opacity = "0";
+    this.dialog.classList.remove("backdrop-active");
     setTimeout(() => {
       if (this.dialog) {
         this.dialog.style.transition =
-          'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out'
-        this.dialog.style.transform = 'scale(1)'
-        this.dialog.style.opacity = '1'
-        this.dialog.classList.add('backdrop-active')
+          "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out";
+        this.dialog.style.transform = "scale(1)";
+        this.dialog.style.opacity = "1";
+        this.dialog.classList.add("backdrop-active");
       }
-    }, 10)
+    }, 10);
   }
 
   private ensureInDocument() {
     if (!document.body.contains(this.container)) {
-      document.body.appendChild(this.container)
+      document.body.appendChild(this.container);
     }
   }
 
   private closeDialog() {
-    if (!this.dialog) return
-    this.abortOngoingTranslation()
-    this.stopReading()
+    if (!this.dialog) return;
+    this.abortOngoingTranslation();
+    this.stopReading();
 
     if (this.closingTimer) {
-      clearTimeout(this.closingTimer)
+      clearTimeout(this.closingTimer);
     }
 
-    this.dialog.style.transition = 'transform 0.15s ease-in, opacity 0.15s ease-in'
-    this.dialog.style.transform = 'scale(0.8)'
-    this.dialog.style.opacity = '0'
-    this.dialog.classList.remove('backdrop-active')
+    this.dialog.style.transition = "transform 0.15s ease-in, opacity 0.15s ease-in";
+    this.dialog.style.transform = "scale(0.8)";
+    this.dialog.style.opacity = "0";
+    this.dialog.classList.remove("backdrop-active");
     this.closingTimer = window.setTimeout(() => {
-      this.dialog?.close()
-      this.closingTimer = null
-      this.onClose?.()
-    }, 150)
+      this.dialog?.close();
+      this.closingTimer = null;
+      this.onClose?.();
+    }, 150);
   }
 
   private abortOngoingTranslation() {
-    browser.runtime.sendMessage({ action: 'abortTranslation' }).catch(() => {})
+    browser.runtime.sendMessage({ action: "abortTranslation" }).catch(() => {});
   }
 
   private async copyToClipboard(text: string, btn: HTMLButtonElement) {
-    if (!text) return
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(text)
-      const originalInner = btn.innerHTML
-      btn.innerHTML = '✅'
+      await navigator.clipboard.writeText(text);
+      const originalInner = btn.innerHTML;
+      btn.innerHTML = "✅";
       setTimeout(() => {
-        btn.innerHTML = originalInner
-      }, 2000)
+        btn.innerHTML = originalInner;
+      }, 2000);
     } catch {
-      const textArea = document.createElement('textarea')
-      textArea.value = text
-      textArea.style.position = 'fixed'
-      textArea.style.left = '-9999px'
-      textArea.style.top = '0'
-      this.shadowRoot.appendChild(textArea)
-      textArea.focus()
-      textArea.select()
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      this.shadowRoot.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
       try {
-        if (document.execCommand('copy')) {
-          const originalInner = btn.innerHTML
-          btn.innerHTML = '✅'
+        if (document.execCommand("copy")) {
+          const originalInner = btn.innerHTML;
+          btn.innerHTML = "✅";
           setTimeout(() => {
-            btn.innerHTML = originalInner
-          }, 2000)
+            btn.innerHTML = originalInner;
+          }, 2000);
         }
       } catch (copyErr) {
-        if (import.meta.env.DEV) console.error('Fallback copy failed:', copyErr)
+        if (import.meta.env.DEV) console.error("Fallback copy failed:", copyErr);
       }
-      this.shadowRoot.removeChild(textArea)
+      this.shadowRoot.removeChild(textArea);
     }
   }
 
   private stopReading() {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
-    this.isReadingOriginal = false
-    this.isReadingTranslation = false
+    this.isReadingOriginal = false;
+    this.isReadingTranslation = false;
   }
 
   private async performTranslation() {
-    this.abortOngoingTranslation()
-    this.stopReading()
-    this.status = 'loading'
-    this.render()
+    this.abortOngoingTranslation();
+    this.stopReading();
+    this.status = "loading";
+    this.render();
 
     try {
       const response = await browser.runtime.sendMessage({
-        action: 'translate',
+        action: "translate",
         text: this.originalText,
         service: this.service,
         direction: this.direction,
-      })
+      });
 
       if (response.success) {
-        this.updateSuccess(response.translation, this.direction)
+        this.updateSuccess(response.translation, this.direction);
       } else if (!response.isAbort) {
         if (
           response.error &&
-          (response.error.includes('AbortError') ||
-            response.error.toLowerCase().includes('aborted') ||
-            response.error.includes('signal is aborted'))
+          (response.error.includes("AbortError") ||
+            response.error.toLowerCase().includes("aborted") ||
+            response.error.includes("signal is aborted"))
         ) {
-          return
+          return;
         }
-        this.updateError(response.error || '翻译失败')
+        this.updateError(response.error || "翻译失败");
       }
     } catch (err: any) {
       if (
-        (err && err.name === 'AbortError') ||
+        (err && err.name === "AbortError") ||
         (err &&
           err.message &&
-          (err.message.includes('AbortError') ||
-            err.message.toLowerCase().includes('aborted') ||
-            err.message.includes('message channel closed') ||
-            err.message.includes('The message port closed')))
+          (err.message.includes("AbortError") ||
+            err.message.toLowerCase().includes("aborted") ||
+            err.message.includes("message channel closed") ||
+            err.message.includes("The message port closed")))
       )
-        return
-      this.updateError('翻译失败，请重试')
+        return;
+      this.updateError("翻译失败，请重试");
     }
   }
 
   private toggleTheme() {
-    this.theme = this.theme === 'light' ? 'dark' : 'light'
-    browser.storage.local.set({ theme: this.theme })
-    this.render()
+    this.theme = this.theme === "light" ? "dark" : "light";
+    browser.storage.local.set({ theme: this.theme });
+    this.render();
   }
 
   private render() {
@@ -517,38 +517,38 @@ export class TranslationDialog {
         <dialog id="translation-dialog">
           <div id="dialog-inner-content"></div>
         </dialog>
-      `
-      this.dialog = this.shadowRoot.getElementById('translation-dialog') as HTMLDialogElement
+      `;
+      this.dialog = this.shadowRoot.getElementById("translation-dialog") as HTMLDialogElement;
     }
 
-    if (this.theme === 'light') {
-      this.dialog.classList.add('light-theme')
+    if (this.theme === "light") {
+      this.dialog.classList.add("light-theme");
     } else {
-      this.dialog.classList.remove('light-theme')
+      this.dialog.classList.remove("light-theme");
     }
 
     if (this.isDialogExpanded) {
-      this.dialog.classList.add('expanded')
+      this.dialog.classList.add("expanded");
     } else {
-      this.dialog.classList.remove('expanded')
+      this.dialog.classList.remove("expanded");
     }
-    const innerContent = this.shadowRoot.getElementById('dialog-inner-content')
+    const innerContent = this.shadowRoot.getElementById("dialog-inner-content");
     if (innerContent) {
       innerContent.innerHTML = `
         <div class="container">
           <div class="header">
             <div class="title-container">
               <div class="app-icon">${iconSvg}</div>
-              <h3>${this.status === 'error' && !this.translation ? '翻译失败' : '中英直译'}</h3>
+              <h3>${this.status === "error" && !this.translation ? "翻译失败" : "中英直译"}</h3>
             </div>
             <div style="display: flex; gap: 8px;">
               <button class="theme-btn" id="theme-btn" title="切换主题">
-                ${this.theme === 'dark' ? '🌙' : '☀️'}
+                ${this.theme === "dark" ? "🌙" : "☀️"}
               </button>
               <button class="expand-btn" id="expand-btn" title="${
-                this.isDialogExpanded ? '还原' : '全屏'
+                this.isDialogExpanded ? "还原" : "全屏"
               }">
-                ${this.isDialogExpanded ? '⇲' : '⤢'}
+                ${this.isDialogExpanded ? "⇲" : "⤢"}
               </button>
               <button class="close-btn" id="close-btn">×</button>
             </div>
@@ -557,10 +557,10 @@ export class TranslationDialog {
             <div class="setting-item">
               <div class="direction-btns">
                 <button class="direction-btn ${
-                  this.direction === 'en' ? 'active' : ''
+                  this.direction === "en" ? "active" : ""
                 }" data-direction="en">到英文</button>
                 <button class="direction-btn ${
-                  this.direction === 'zh' ? 'active' : ''
+                  this.direction === "zh" ? "active" : ""
                 }" data-direction="zh">到中文</button>
               </div>
             </div>
@@ -568,16 +568,16 @@ export class TranslationDialog {
               <div class="select-wrapper">
                 <select id="service-select">
                   <option value="google" ${
-                    this.service === 'google' ? 'selected' : ''
+                    this.service === "google" ? "selected" : ""
                   }>Google 翻译</option>
                   <option value="microsoft" ${
-                    this.service === 'microsoft' ? 'selected' : ''
+                    this.service === "microsoft" ? "selected" : ""
                   }>Microsoft 翻译</option>
                   <option value="tencent" ${
-                    this.service === 'tencent' ? 'selected' : ''
+                    this.service === "tencent" ? "selected" : ""
                   }>腾讯翻译</option>
                   <option value="openrouter" ${
-                    this.service === 'openrouter' ? 'selected' : ''
+                    this.service === "openrouter" ? "selected" : ""
                   }>OpenRouter</option>
                 </select>
               </div>
@@ -588,7 +588,7 @@ export class TranslationDialog {
               <span>原文</span>
               <div style="display: flex; gap: 8px;">
                 <button class="icon-btn" id="tts-btn">${
-                  this.isReadingOriginal ? '⏹' : '🔊'
+                  this.isReadingOriginal ? "⏹" : "🔊"
                 }</button>
                 <button class="icon-btn" id="youdao-btn" title="在有道词典中查看">
                   <img width="14" height="14" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAACXBIWXMAACE4AAAhOAFFljFgAAAAMFBMVEVHcEz9ACL8ABf/ABf8ABj8ABn8ABn8ABn9ABn8ABn9ABn8ABn8ABr9ABn8ARn8ARrLvc86AAAAD3RSTlMABRAbKT1RYniLnrDG3/OSMDXgAAABNUlEQVR42s3Wy3KGIAwF4BPuCiTv/7btIkrHYDr/qv2WKpAcM4741+qhStArsemVlrERTlEdKrGoio04ze0qagZs3EecUEEuCRuHqAOK5BLdE6o5gQkWDVEZKoua2AhTFEGVFdxGsts1UQ3W2m7g0kUVbDSTKqYfkjk/sBcSbEhpFblB93bh05Dow5C6U6Qf0uo5YaObBYc/3OPZQ+ZVpLtAGgGgPOVywF8gvdV2ylLh9mBleClZHLET5c3A3vHc2O8ZiEN+6kNUwovY5TZrmqYiK/fJ32Yv5E/eQiHGQADCNNNu+V81XzEvwZen6cBDhUUNwotYcEkrXs54k+XIMcZU2pAbV6iX2WMW9XsDp1gNjiHKr2dheRgJnvh8vMJHQxbulfCb0AaLCM9xlEi4+Yj+/o/kCxZXLCNxyRVUAAAAAElFTkSuQmCC">
@@ -606,26 +606,26 @@ export class TranslationDialog {
               <span>翻译</span>
               <div style="display: flex; gap: 8px;">
                 <button class="icon-btn" id="tts-translation-btn" ${
-                  this.status === 'loading' || !this.translation ? 'disabled' : ''
-                }>${this.isReadingTranslation ? '⏹' : '🔊'}</button>
+                  this.status === "loading" || !this.translation ? "disabled" : ""
+                }>${this.isReadingTranslation ? "⏹" : "🔊"}</button>
                 <button class="icon-btn" id="quick-copy-btn" ${
-                  this.status === 'loading' || !this.translation ? 'disabled' : ''
+                  this.status === "loading" || !this.translation ? "disabled" : ""
                 }>📋</button>
                 <button class="icon-btn" id="retry-btn" title="重新翻译" ${
-                  this.status === 'loading' ? 'disabled' : ''
+                  this.status === "loading" ? "disabled" : ""
                 }>🔄</button>
               </div>
             </div>
             <div id="translation-body">
               ${
-                this.status === 'loading'
+                this.status === "loading"
                   ? `
                 <div style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%;">
                   <div style="width: 16px; height: 16px; border: 2px solid var(--border-color); border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
                   <span style="color: var(--text-sub); font-size: 14px;">正在翻译...</span>
                 </div>
               `
-                  : this.status === 'success'
+                  : this.status === "success"
                     ? `
                 <div class="text-content">${this.escapeHtml(this.translation)}</div>
               `
@@ -638,207 +638,207 @@ export class TranslationDialog {
             </div>
           </div>
         </div>
-      `
+      `;
     }
-    this.setupEventListeners()
+    this.setupEventListeners();
   }
 
   private setupEventListeners() {
-    if (!this.dialog) return
+    if (!this.dialog) return;
 
-    const expandBtn = this.shadowRoot.getElementById('expand-btn')
+    const expandBtn = this.shadowRoot.getElementById("expand-btn");
     if (expandBtn) {
-      expandBtn.onclick = e => {
-        e.stopPropagation()
-        this.isDialogExpanded = !this.isDialogExpanded
+      expandBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.isDialogExpanded = !this.isDialogExpanded;
         // Reset position when entering/leaving expanded mode
         if (this.dialog) {
-          this.dialog.style.left = ''
-          this.dialog.style.top = ''
-          this.dialog.classList.remove('is-positioned')
+          this.dialog.style.left = "";
+          this.dialog.style.top = "";
+          this.dialog.classList.remove("is-positioned");
         }
-        this.render()
-      }
+        this.render();
+      };
     }
 
-    const themeBtn = this.shadowRoot.getElementById('theme-btn')
+    const themeBtn = this.shadowRoot.getElementById("theme-btn");
     if (themeBtn) {
-      themeBtn.onclick = e => {
-        e.stopPropagation()
-        this.toggleTheme()
-      }
+      themeBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.toggleTheme();
+      };
     }
 
-    const closeBtn = this.shadowRoot.getElementById('close-btn')
+    const closeBtn = this.shadowRoot.getElementById("close-btn");
     if (closeBtn) {
-      closeBtn.onclick = e => {
-        e.stopPropagation()
-        this.closeDialog()
-      }
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.closeDialog();
+      };
     }
 
     // Dragging logic
-    const header = this.shadowRoot.querySelector('.header') as HTMLElement
+    const header = this.shadowRoot.querySelector(".header") as HTMLElement;
     if (header && this.dialog) {
       header.onmousedown = (e: MouseEvent) => {
-        if (this.isDialogExpanded) return
+        if (this.isDialogExpanded) return;
 
         // Prevent drag when clicking buttons
-        if ((e.target as HTMLElement).closest('button')) return
+        if ((e.target as HTMLElement).closest("button")) return;
 
-        let hasMoved = false
-        const rect = this.dialog!.getBoundingClientRect()
+        let hasMoved = false;
+        const rect = this.dialog!.getBoundingClientRect();
         this.dragOffset = {
           x: e.clientX - rect.left,
           y: e.clientY - rect.top,
-        }
+        };
 
         const onMouseMove = (moveEvent: MouseEvent) => {
-          if (!this.dialog) return
+          if (!this.dialog) return;
 
           if (!hasMoved) {
-            hasMoved = true
-            this.isDragging = true
-            this.dialog.classList.add('dragging')
-            this.dialog.classList.add('is-positioned')
+            hasMoved = true;
+            this.isDragging = true;
+            this.dialog.classList.add("dragging");
+            this.dialog.classList.add("is-positioned");
           }
 
-          let newX = moveEvent.clientX - this.dragOffset.x
-          let newY = moveEvent.clientY - this.dragOffset.y
+          let newX = moveEvent.clientX - this.dragOffset.x;
+          let newY = moveEvent.clientY - this.dragOffset.y;
 
           // Boundaries
-          const padding = 0
-          newX = Math.max(padding, Math.min(newX, window.innerWidth - rect.width - padding))
-          newY = Math.max(padding, Math.min(newY, window.innerHeight - rect.height - padding))
+          const padding = 0;
+          newX = Math.max(padding, Math.min(newX, window.innerWidth - rect.width - padding));
+          newY = Math.max(padding, Math.min(newY, window.innerHeight - rect.height - padding));
 
-          this.dialog.style.left = `${newX}px`
-          this.dialog.style.top = `${newY}px`
-        }
+          this.dialog.style.left = `${newX}px`;
+          this.dialog.style.top = `${newY}px`;
+        };
 
         const onMouseUp = () => {
-          this.isDragging = false
+          this.isDragging = false;
           if (this.dialog) {
-            this.dialog.classList.remove('dragging')
+            this.dialog.classList.remove("dragging");
           }
-          window.removeEventListener('mousemove', onMouseMove)
-          window.removeEventListener('mouseup', onMouseUp)
-        }
+          window.removeEventListener("mousemove", onMouseMove);
+          window.removeEventListener("mouseup", onMouseUp);
+        };
 
-        window.addEventListener('mousemove', onMouseMove)
-        window.addEventListener('mouseup', onMouseUp)
-      }
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+      };
     }
 
-    this.shadowRoot.querySelectorAll('#close-btn-2, #close-btn-error').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.stopPropagation()
-        this.closeDialog()
-      })
-    })
-    this.dialog.onclick = e => {
-      if (e.target === this.dialog) this.closeDialog()
-    }
+    this.shadowRoot.querySelectorAll("#close-btn-2, #close-btn-error").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.closeDialog();
+      });
+    });
+    this.dialog.onclick = (e) => {
+      if (e.target === this.dialog) this.closeDialog();
+    };
     this.dialog.onclose = () => {
-      this.closeDialog()
-    }
-    this.shadowRoot.querySelectorAll('.direction-btn').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const newDir = (e.currentTarget as HTMLElement).getAttribute('data-direction') as any
+      this.closeDialog();
+    };
+    this.shadowRoot.querySelectorAll(".direction-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const newDir = (e.currentTarget as HTMLElement).getAttribute("data-direction") as any;
         if (newDir !== this.direction) {
-          this.direction = newDir
-          this.performTranslation()
+          this.direction = newDir;
+          this.performTranslation();
         }
-      })
-    })
-    const select = this.shadowRoot.getElementById('service-select') as HTMLSelectElement
+      });
+    });
+    const select = this.shadowRoot.getElementById("service-select") as HTMLSelectElement;
     if (select)
-      select.onchange = e => {
-        this.service = (e.target as any).value
-        browser.storage.local.set({ selectedService: this.service })
-        this.performTranslation()
-      }
-    const youdaoBtn = this.shadowRoot.getElementById('youdao-btn')
+      select.onchange = (e) => {
+        this.service = (e.target as any).value;
+        browser.storage.local.set({ selectedService: this.service });
+        this.performTranslation();
+      };
+    const youdaoBtn = this.shadowRoot.getElementById("youdao-btn");
     if (youdaoBtn)
       youdaoBtn.onclick = () => {
         window.open(
           `https://www.youdao.com/result?word=${encodeURIComponent(this.originalText)}&lang=en`,
-          '_blank',
-        )
-      }
+          "_blank",
+        );
+      };
 
-    const ttsBtn = this.shadowRoot.getElementById('tts-btn')
+    const ttsBtn = this.shadowRoot.getElementById("tts-btn");
     if (ttsBtn)
       ttsBtn.onclick = () => {
-        const synthesis = window.speechSynthesis
+        const synthesis = window.speechSynthesis;
         if (this.isReadingOriginal) {
-          synthesis.cancel()
-          this.isReadingOriginal = false
-          this.isReadingTranslation = false
-          this.render()
+          synthesis.cancel();
+          this.isReadingOriginal = false;
+          this.isReadingTranslation = false;
+          this.render();
         } else {
-          synthesis.cancel()
-          this.isReadingTranslation = false
-          const u = new SpeechSynthesisUtterance(this.originalText)
-          u.lang = this.direction === 'zh' ? 'en-US' : 'zh-CN'
+          synthesis.cancel();
+          this.isReadingTranslation = false;
+          const u = new SpeechSynthesisUtterance(this.originalText);
+          u.lang = this.direction === "zh" ? "en-US" : "zh-CN";
           u.onstart = () => {
-            this.isReadingOriginal = true
-            this.render()
-          }
+            this.isReadingOriginal = true;
+            this.render();
+          };
           u.onend = () => {
-            this.isReadingOriginal = false
-            this.render()
-          }
+            this.isReadingOriginal = false;
+            this.render();
+          };
           u.onerror = () => {
-            this.isReadingOriginal = false
-            this.render()
-          }
-          synthesis.speak(u)
+            this.isReadingOriginal = false;
+            this.render();
+          };
+          synthesis.speak(u);
         }
-      }
+      };
 
-    const ttsTranslationBtn = this.shadowRoot.getElementById('tts-translation-btn')
+    const ttsTranslationBtn = this.shadowRoot.getElementById("tts-translation-btn");
     if (ttsTranslationBtn)
       ttsTranslationBtn.onclick = () => {
-        if (this.status === 'loading' || !this.translation) return
-        const synthesis = window.speechSynthesis
+        if (this.status === "loading" || !this.translation) return;
+        const synthesis = window.speechSynthesis;
         if (this.isReadingTranslation) {
-          synthesis.cancel()
-          this.isReadingTranslation = false
-          this.isReadingOriginal = false
-          this.render()
+          synthesis.cancel();
+          this.isReadingTranslation = false;
+          this.isReadingOriginal = false;
+          this.render();
         } else {
-          synthesis.cancel()
-          this.isReadingOriginal = false
-          const u = new SpeechSynthesisUtterance(this.translation)
-          u.lang = this.direction === 'zh' ? 'zh-CN' : 'en-US'
+          synthesis.cancel();
+          this.isReadingOriginal = false;
+          const u = new SpeechSynthesisUtterance(this.translation);
+          u.lang = this.direction === "zh" ? "zh-CN" : "en-US";
           u.onstart = () => {
-            this.isReadingTranslation = true
-            this.render()
-          }
+            this.isReadingTranslation = true;
+            this.render();
+          };
           u.onend = () => {
-            this.isReadingTranslation = false
-            this.render()
-          }
+            this.isReadingTranslation = false;
+            this.render();
+          };
           u.onerror = () => {
-            this.isReadingTranslation = false
-            this.render()
-          }
-          synthesis.speak(u)
+            this.isReadingTranslation = false;
+            this.render();
+          };
+          synthesis.speak(u);
         }
-      }
+      };
 
-    const copyBtn = this.shadowRoot.getElementById('copy-btn')
-    const quickCopyBtn = this.shadowRoot.getElementById('quick-copy-btn')
-    ;[copyBtn, quickCopyBtn].forEach(btn => {
-      if (btn) btn.onclick = () => this.copyToClipboard(this.translation, btn as HTMLButtonElement)
-    })
+    const copyBtn = this.shadowRoot.getElementById("copy-btn");
+    const quickCopyBtn = this.shadowRoot.getElementById("quick-copy-btn");
+    [copyBtn, quickCopyBtn].forEach((btn) => {
+      if (btn) btn.onclick = () => this.copyToClipboard(this.translation, btn as HTMLButtonElement);
+    });
 
-    const retryBtn = this.shadowRoot.getElementById('retry-btn')
+    const retryBtn = this.shadowRoot.getElementById("retry-btn");
     if (retryBtn) {
-      retryBtn.onclick = e => {
-        e.stopPropagation()
-        this.performTranslation()
-      }
+      retryBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.performTranslation();
+      };
     }
   }
 }

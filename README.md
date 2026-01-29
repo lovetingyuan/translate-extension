@@ -38,7 +38,7 @@ A modern, bidirectional Chinese-English translation browser extension built with
 
    ```bash
    git clone <repository-url>
-   cd translatee-extension
+   cd DuoFlux-extension
    ```
 
 2. Install dependencies:

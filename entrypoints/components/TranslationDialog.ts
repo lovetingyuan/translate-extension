@@ -296,8 +296,9 @@ export class TranslationDialog {
             --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
             --select-option-bg: #333;
             --select-option-text: white;
-            --active-btn-bg: rgba(255, 255, 255, 0.3);
-            --active-btn-border: rgba(255, 255, 255, 0.5);
+            --active-btn-bg: #6366f1;
+            --active-btn-text: #ffffff;
+            --active-btn-border: #6366f1;
             --icon-btn-hover: rgba(255, 255, 255, 0.4);
             --close-btn-hover: rgba(255, 255, 255, 0.4);
           }
@@ -316,8 +317,9 @@ export class TranslationDialog {
             --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
             --select-option-bg: #ffffff;
             --select-option-text: #333333;
-            --active-btn-bg: rgba(0, 0, 0, 0.1);
-            --active-btn-border: rgba(0, 0, 0, 0.2);
+            --active-btn-bg: #6366f1;
+            --active-btn-text: #ffffff;
+            --active-btn-border: #6366f1;
             --icon-btn-hover: rgba(0, 0, 0, 0.1);
             --close-btn-hover: rgba(0, 0, 0, 0.1);
           }
@@ -418,8 +420,8 @@ export class TranslationDialog {
             font-size: 14px; font-weight: 500; transition: all 0.2s; background: var(--btn-bg); border: 1px solid var(--border-color);
           }
           .direction-btn:hover { background: var(--btn-hover); border-color: var(--text-sub); }
-          .direction-btn.active { background: var(--active-btn-bg); border: 1px solid var(--active-btn-border); }
-          .direction-btn.active:hover { background: var(--btn-hover); }
+          .direction-btn.active { background: var(--active-btn-bg); border: 1px solid var(--active-btn-border); color: var(--active-btn-text); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+          .direction-btn.active:hover { background: #4f46e5; }
           .select-wrapper {
             position: relative;
             width: 100%;

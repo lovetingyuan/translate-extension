@@ -251,7 +251,7 @@ function App() {
             <div className="card-body p-4 min-h-20 max-h-70 overflow-y-auto scrollbar-gutter-stable">
               <p className="text-sm whitespace-pre-wrap pr-2">{translation}</p>
             </div>
-            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
               <button
                 className={`btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0 ${
                   isSpeaking ? 'text-primary' : ''

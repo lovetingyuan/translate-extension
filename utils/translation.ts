@@ -320,7 +320,10 @@ Rules:
       temperature: 0.1,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Translate the content inside <source_text> to ${lang}:\n<source_text>\n${text}\n</source_text>` },
+        {
+          role: "user",
+          content: `Translate the content inside <source_text> to ${lang}:\n<source_text>\n${text}\n</source_text>`,
+        },
       ],
     }),
     signal,

@@ -1,29 +1,29 @@
-import { useState, useEffect } from 'react'
-import { CheckIcon } from '../components/icons'
+import { useState, useEffect } from "react";
+import { CheckIcon } from "../components/icons";
 
 interface SettingsProps {
-  onClose: () => void
+  onClose: () => void;
 }
 
 export default function Settings({ onClose }: SettingsProps) {
-  const [apiKey, setApiKey] = useState('')
-  const [modelId, setModelId] = useState('')
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [apiKey, setApiKey] = useState("");
+  const [modelId, setModelId] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
-    browser.storage.local.get(['openRouterApiKey', 'openRouterModelId']).then(res => {
-      if (res.openRouterApiKey) setApiKey(res.openRouterApiKey as string)
-      if (res.openRouterModelId) setModelId(res.openRouterModelId as string)
-    })
-  }, [])
+    browser.storage.local.get(["openRouterApiKey", "openRouterModelId"]).then((res) => {
+      if (res.openRouterApiKey) setApiKey(res.openRouterApiKey as string);
+      if (res.openRouterModelId) setModelId(res.openRouterModelId as string);
+    });
+  }, []);
 
   const handleSave = async () => {
     await browser.storage.local.set({
       openRouterApiKey: apiKey,
       openRouterModelId: modelId,
-    })
-    onClose()
-  }
+    });
+    onClose();
+  };
 
   return (
     <div className="absolute inset-0 bg-base-100 z-50 flex flex-col">
@@ -57,7 +57,7 @@ export default function Settings({ onClose }: SettingsProps) {
             placeholder="sk-or-..."
             className="input input-bordered input-sm w-full"
             value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
+            onChange={(e) => setApiKey(e.target.value)}
           />
           {/* <label className="label">
             <span className="label-text-alt text-xs opacity-60">优先使用此Key，未设置则使用默认值</span>
@@ -81,7 +81,7 @@ export default function Settings({ onClose }: SettingsProps) {
             placeholder="xiaomi/mimo-v2-flash:free"
             className="input input-bordered input-sm w-full"
             value={modelId}
-            onChange={e => setModelId(e.target.value)}
+            onChange={(e) => setModelId(e.target.value)}
           />
           {/* <label className="label">
             <span className="label-text-alt text-xs opacity-60">例如: google/gemini-2.0-flash-exp:free</span>
@@ -89,5 +89,5 @@ export default function Settings({ onClose }: SettingsProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

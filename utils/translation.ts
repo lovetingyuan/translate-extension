@@ -14,6 +14,10 @@ const parseMSToken = (token: string): number => {
 let msTokenCache: { token: string; expiresAt: number } | null = null;
 const EXPIRATION_BUFFER_MS = 1000;
 
+const REMOTE_CONFIG_URL = "https://translate-extension.tingyuan.in/config.json";
+const REMOTE_MODEL_CACHE_KEY = "remoteOpenRouterModel";
+const REMOTE_MODEL_CACHE_TTL = 3 * 60 * 60 * 1000; // 3 hours
+
 const getMicrosoftToken = async (): Promise<string> => {
   const now = Date.now();
 
@@ -233,6 +237,42 @@ const translateWithTencent = async (
   throw new Error("Tencent翻译返回数据格式错误");
 };
 
+/**
+ * 获取远程配置中的默认模型 ID
+ * 仅在用户未配置模型时调用，且缓存 3 小时
+ */
+const getRemoteFallbackModel = async (): Promise<string | undefined> => {
+  const now = Date.now();
+  try {
+    const storage = await browser.storage.local.get(REMOTE_MODEL_CACHE_KEY);
+    const cached = storage[REMOTE_MODEL_CACHE_KEY] as
+      | { modelId: string; timestamp: number }
+      | undefined;
+
+    if (cached && now - cached.timestamp < REMOTE_MODEL_CACHE_TTL) {
+      logger.log("使用缓存的远程模型 ID:", cached.modelId);
+      return cached.modelId;
+    }
+
+    logger.log("正在从远程获取默认模型 ID...");
+    const response = await fetch(REMOTE_CONFIG_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    const modelId = data["openrouter-model-id"];
+    if (modelId) {
+      await browser.storage.local.set({
+        [REMOTE_MODEL_CACHE_KEY]: { modelId, timestamp: now },
+      });
+      logger.log("远程模型 ID 获取成功:", modelId);
+      return modelId;
+    }
+  } catch (err) {
+    logger.error("获取远程模型 ID 失败:", err);
+  }
+  return undefined;
+};
+
 const translateWithOpenRouter = async (
   text: string,
   targetLang: "zh" | "en",
@@ -252,7 +292,11 @@ const translateWithOpenRouter = async (
     throw new Error("OpenRouter API Key 未配置 (请在设置中配置或检查环境变量)");
   }
 
-  const model = userModelId || "xiaomi/mimo-v2-flash:free";
+  const model = userModelId || (await getRemoteFallbackModel());
+
+  if (!model) {
+    throw new Error("OpenRouter 模型 ID 未配置，且无法获取远程默认模型");
+  }
 
   const url = "https://openrouter.ai/api/v1/chat/completions";
   logger.log("正在请求OpenRouter翻译API:", url, "Model:", model);

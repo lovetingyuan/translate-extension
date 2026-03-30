@@ -16,6 +16,7 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "lit": "^3.3.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },

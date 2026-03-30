@@ -30,6 +30,7 @@ interface RuntimeMessageShape {
   services?: unknown;
   direction?: unknown;
   forceRefresh?: unknown;
+  preserveSelection?: unknown;
 }
 
 type ContextMenusWithOnShown = typeof browser.contextMenus & {
@@ -215,29 +216,45 @@ export default defineBackground(() => {
     services?: TranslationServiceId[],
     direction?: TranslationDirection,
     forceRefresh = false,
+    preserveSelection = false,
   ): Promise<TranslationBatchResult> => {
-    const selectedServices = await resolveRequestedServices(services);
+    const requestedServices = await resolveRequestedServices(services);
     const finalDirection = direction ?? detectDirection(text);
 
-    if (selectedServices.length === 0) {
+    if (requestedServices.length === 0) {
       throw new Error("至少选择一个翻译服务");
     }
 
     const currentState = getTabSelection(tabId);
     const sameSession = currentState.text === text && currentState.direction === finalDirection;
 
-    if (!sameSession || forceRefresh) {
+    if (!sameSession) {
       abortTabTranslations(tabId);
-      tabSelections.set(tabId, createTabSessionState(text, finalDirection, selectedServices));
+      tabSelections.set(tabId, createTabSessionState(text, finalDirection, requestedServices));
     } else {
-      currentState.selectedServices = selectedServices;
+      currentState.selectedServices =
+        preserveSelection && currentState.selectedServices.length > 0
+          ? currentState.selectedServices
+          : requestedServices;
+
+      if (forceRefresh) {
+        abortTabTranslations(tabId, requestedServices);
+
+        const nextCachedResultsByService = { ...currentState.cachedResultsByService };
+        requestedServices.forEach((service) => {
+          delete nextCachedResultsByService[service];
+        });
+        currentState.cachedResultsByService = nextCachedResultsByService;
+        currentState.timestamp = Date.now();
+        currentState.success = hasSuccessfulResults(nextCachedResultsByService);
+      }
     }
 
     const state = getTabSelection(tabId);
     const controllerMap = getTabControllers(tabId);
     const pendingMap = getTabPendingPromises(tabId);
 
-    const resultPromises = selectedServices.map((service) => {
+    const resultPromises = requestedServices.map((service) => {
       const cachedResult = state.cachedResultsByService[service];
       if (cachedResult) {
         return Promise.resolve(cachedResult);
@@ -279,12 +296,15 @@ export default defineBackground(() => {
     await Promise.all(resultPromises);
 
     const latestState = getTabSelection(tabId);
-    latestState.selectedServices = selectedServices;
+    latestState.selectedServices =
+      preserveSelection && latestState.selectedServices.length > 0
+        ? latestState.selectedServices
+        : requestedServices;
     latestState.timestamp = Date.now();
     latestState.success = hasSuccessfulResults(latestState.cachedResultsByService);
 
     return {
-      results: getVisibleResults(latestState, selectedServices),
+      results: getVisibleResults(latestState),
       direction: finalDirection,
     };
   };
@@ -358,6 +378,7 @@ export default defineBackground(() => {
       const services = normalizeRequestedServices(runtimeMessage.services);
       const direction = normalizeRequestedDirection(runtimeMessage.direction);
       const forceRefresh = runtimeMessage.forceRefresh === true;
+      const preserveSelection = runtimeMessage.preserveSelection === true;
 
       if (direction) {
         browser.storage.local.set({ translationDirection: direction }).catch(() => {});
@@ -365,7 +386,14 @@ export default defineBackground(() => {
 
       const translationPromise =
         typeof tabId === "number"
-          ? requestTabTranslations(tabId, text, services, direction, forceRefresh)
+          ? requestTabTranslations(
+              tabId,
+              text,
+              services,
+              direction,
+              forceRefresh,
+              preserveSelection,
+            )
           : translateWithServices(text, services, direction);
 
       translationPromise

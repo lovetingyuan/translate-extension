@@ -1,4 +1,4 @@
-import { css, html, render } from 'lit'
+import { css, html, render, svg } from 'lit'
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js'
 import { browser } from 'wxt/browser'
 import iconSvg from '../../assets/icon.svg?raw'
@@ -40,6 +40,106 @@ const decodeResults = (results: TranslationResultItem[]): TranslationResultItem[
       ? { ...result, translation: decodeHtmlEntities(result.translation) }
       : result,
   )
+
+const renderStrokeIcon = (
+  paths: ReturnType<typeof svg>,
+  options: {
+    viewBox?: string
+    filled?: boolean
+    className?: string
+  } = {},
+) => svg`
+  <svg
+    class=${options.className ?? 'ui-icon'}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox=${options.viewBox ?? '0 0 24 24'}
+    fill=${options.filled ? 'currentColor' : 'none'}
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    ${paths}
+  </svg>
+`
+
+const renderSunIcon = () =>
+  renderStrokeIcon(svg`
+    <circle cx="12" cy="12" r="4"></circle>
+    <path d="M12 2v2"></path>
+    <path d="M12 20v2"></path>
+    <path d="M4.93 4.93l1.41 1.41"></path>
+    <path d="M17.66 17.66l1.41 1.41"></path>
+    <path d="M2 12h2"></path>
+    <path d="M20 12h2"></path>
+    <path d="M6.34 17.66l-1.41 1.41"></path>
+    <path d="M19.07 4.93l-1.41 1.41"></path>
+  `)
+
+const renderMoonIcon = () =>
+  renderStrokeIcon(svg`<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z"></path>`)
+
+const renderExpandIcon = () =>
+  renderStrokeIcon(svg`
+    <path d="M15 4h5v5"></path>
+    <path d="M14 10l6-6"></path>
+    <path d="M9 20H4v-5"></path>
+    <path d="M10 14l-6 6"></path>
+  `)
+
+const renderCollapseIcon = () =>
+  renderStrokeIcon(svg`
+    <path d="M9 4H4v5"></path>
+    <path d="M4 4l6 6"></path>
+    <path d="M15 20h5v-5"></path>
+    <path d="M20 20l-6-6"></path>
+  `)
+
+const renderCloseIcon = () =>
+  renderStrokeIcon(svg`
+    <path d="M18 6L6 18"></path>
+    <path d="M6 6l12 12"></path>
+  `)
+
+const renderSpeakerIcon = () =>
+  renderStrokeIcon(svg`
+    <path d="M11 5L6 9H3v6h3l5 4V5z"></path>
+    <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+    <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+  `)
+
+const renderStopIcon = () =>
+  renderStrokeIcon(
+    svg`<rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"></rect>`,
+    { filled: true },
+  )
+
+const renderCopyIcon = () =>
+  renderStrokeIcon(svg`
+    <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+    <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>
+  `)
+
+const renderCheckIcon = () => renderStrokeIcon(svg`<path d="M5 12l4 4L19 6"></path>`)
+
+const renderErrorIcon = () =>
+  renderStrokeIcon(svg`
+    <circle cx="12" cy="12" r="9"></circle>
+    <path d="M15 9l-6 6"></path>
+    <path d="M9 9l6 6"></path>
+  `)
+
+const renderChevronDownIcon = (className = 'ui-icon') =>
+  renderStrokeIcon(svg`<path d="M6 9l6 6 6-6"></path>`, { className })
+
+const renderExternalLinkIcon = () =>
+  renderStrokeIcon(svg`
+    <path d="M14 5h5v5"></path>
+    <path d="M10 14L19 5"></path>
+    <path d="M19 13v5a1 1 0 0 1-1 1h-5"></path>
+    <path d="M11 5H6a1 1 0 0 0-1 1v5"></path>
+  `)
 
 const dialogStyles = css`
   :host {
@@ -165,12 +265,21 @@ const dialogStyles = css`
     height: 100%;
   }
 
+  .ui-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: block;
+    stroke: currentColor;
+    fill: none;
+  }
+
   .actions,
   .box-actions,
   .badges {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
   }
 
   .theme-btn,
@@ -202,6 +311,14 @@ const dialogStyles = css`
     align-items: center;
     justify-content: center;
     border: none;
+  }
+
+  .theme-btn .ui-icon,
+  .expand-btn .ui-icon,
+  .close-btn .ui-icon,
+  .icon-btn .ui-icon {
+    width: 14px;
+    height: 14px;
   }
 
   .retry-btn,
@@ -236,6 +353,7 @@ const dialogStyles = css`
     flex-wrap: wrap;
     align-items: center;
     gap: 12px 16px;
+    margin-top: 10px;
   }
 
   .setting-item {
@@ -295,7 +413,11 @@ const dialogStyles = css`
   }
 
   .dropdown-arrow {
-    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 12px;
     transition: transform 0.2s ease;
   }
 
@@ -427,7 +549,6 @@ const dialogStyles = css`
     border-radius: 999px;
     padding: 2.5px 10px;
     font-size: 12px;
-    font-weight: 600;
     background: var(--btn);
   }
 
@@ -443,6 +564,13 @@ const dialogStyles = css`
     display: flex;
     gap: 8px;
     align-items: flex-start;
+  }
+
+  .error-state .ui-icon {
+    width: 16px;
+    height: 16px;
+    margin-top: 3px;
+    flex-shrink: 0;
   }
 
   .status-row {
@@ -888,7 +1016,7 @@ class TranslationDialogView {
 
       return html`
         <div class="error-state">
-          <span>✕</span>
+          ${renderErrorIcon()}
           <span>${this.errorMessage || '暂无翻译结果'}</span>
         </div>
       `
@@ -937,7 +1065,7 @@ class TranslationDialogView {
                         void this.handleResultSpeech(result.service)
                       }}
                     >
-                      ${speaking ? '⏹' : '🔊'}
+                      ${speaking ? renderStopIcon() : renderSpeakerIcon()}
                     </button>
                     <button
                       class="icon-btn"
@@ -949,7 +1077,9 @@ class TranslationDialogView {
                         void this.handleCopyService(result.service)
                       }}
                     >
-                      ${this.copiedService === result.service ? '✅' : '📋'}
+                      ${this.copiedService === result.service
+                        ? renderCheckIcon()
+                        : renderCopyIcon()}
                     </button>
                   `}
             </div>
@@ -958,7 +1088,7 @@ class TranslationDialogView {
             ? html`<div class="result-text">${result.translation}</div>`
             : html`
                 <div class="error-state">
-                  <span>✕</span>
+                  ${renderErrorIcon()}
                   <span>${result.error}</span>
                 </div>
               `}
@@ -1089,7 +1219,19 @@ class TranslationDialogView {
   }
 
   private handleDialogClick(event: MouseEvent): void {
-    if (event.target === this.getDialogElement()) {
+    const dialog = this.getDialogElement()
+    if (!dialog || event.target !== dialog) {
+      return
+    }
+
+    const rect = dialog.getBoundingClientRect()
+    const isBackdropClick =
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom
+
+    if (isBackdropClick) {
       this.closeDialog()
     }
   }
@@ -1269,7 +1411,7 @@ class TranslationDialogView {
                   void this.toggleTheme()
                 }}
               >
-                ${this.theme === 'dark' ? '🌙' : '☀️'}
+                ${this.theme === 'dark' ? renderMoonIcon() : renderSunIcon()}
               </button>
               <button
                 class="expand-btn"
@@ -1277,7 +1419,7 @@ class TranslationDialogView {
                 title=${this.isDialogExpanded ? '还原' : '全屏'}
                 @click=${() => this.handleExpandToggle()}
               >
-                ${this.isDialogExpanded ? '⇲' : '⤢'}
+                ${this.isDialogExpanded ? renderCollapseIcon() : renderExpandIcon()}
               </button>
               <button
                 class="close-btn"
@@ -1288,7 +1430,7 @@ class TranslationDialogView {
                   this.closeDialog()
                 }}
               >
-                ×
+                ${renderCloseIcon()}
               </button>
             </div>
           </div>
@@ -1335,7 +1477,9 @@ class TranslationDialogView {
                   <span class="dropdown-trigger-text">
                     ${getSelectedServicesSummary(this.selectedServices)}
                   </span>
-                  <span class=${`dropdown-arrow ${this.isServiceMenuOpen ? 'open' : ''}`}>▼</span>
+                  <span class=${`dropdown-arrow ${this.isServiceMenuOpen ? 'open' : ''}`}
+                    >${renderChevronDownIcon()}</span
+                  >
                 </button>
 
                 ${this.isServiceMenuOpen
@@ -1377,7 +1521,7 @@ class TranslationDialogView {
                   title=${this.isReadingOriginal ? '停止朗读' : '朗读原文'}
                   @click=${() => this.handleOriginalSpeech()}
                 >
-                  ${this.isReadingOriginal ? '⏹' : '🔊'}
+                  ${this.isReadingOriginal ? renderStopIcon() : renderSpeakerIcon()}
                 </button>
                 <button
                   class="icon-btn"
@@ -1385,7 +1529,7 @@ class TranslationDialogView {
                   title="在有道词典中查看"
                   @click=${() => this.handleYoudaoOpen()}
                 >
-                  ↗
+                  ${renderExternalLinkIcon()}
                 </button>
               </div>
             </div>

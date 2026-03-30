@@ -512,10 +512,10 @@ function App() {
             <div ref={serviceMenuRef} className="dropdown dropdown-bottom relative w-36 shrink-0">
               <button
                 type="button"
-                className="btn btn-outline btn-xs h-8 min-h-8 w-full justify-between px-2.5"
+                className="btn btn-outline btn-primary btn-xs h-8 min-h-8 w-full justify-between px-3"
                 onClick={() => setIsServiceMenuOpen(current => !current)}
               >
-                <span className="truncate text-xs font-normal">
+                <span className="truncate text-xs font-normal text-neutral-800 dark:text-neutral-200">
                   {getSelectedServicesSummary(selectedServices)}
                 </span>
                 <span
@@ -555,7 +555,7 @@ function App() {
               )}
             </div>
             <label
-              className="btn btn-outline btn-xs h-8 min-h-8 w-12 px-0 swap swap-flip shrink-0"
+              className="btn btn-outline btn-secondary btn-xs h-8 min-h-8 w-12 px-0 swap swap-flip shrink-0"
               title="切换目标语言"
             >
               <input
@@ -593,7 +593,7 @@ function App() {
                     <div className="card-body p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <div className="badge badge-xs badge-outline opacity-60">
+                          <div className="badge badge-primary badge-xs badge-outline opacity-60">
                             {getServiceLabel(service)}
                           </div>
                         </div>
@@ -617,7 +617,7 @@ function App() {
                   <div className="card-body p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <div className="badge badge-xs badge-outline opacity-60">
+                        <div className="badge badge-primary badge-xs badge-outline opacity-60">
                           {result.serviceLabel}
                         </div>
                       </div>

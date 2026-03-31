@@ -217,6 +217,7 @@ export default defineBackground(() => {
     direction?: TranslationDirection,
     forceRefresh = false,
     preserveSelection = false,
+    notifyIncremental = false,
   ): Promise<TranslationBatchResult> => {
     const requestedServices = await resolveRequestedServices(services);
     const finalDirection = direction ?? detectDirection(text);
@@ -271,6 +272,21 @@ export default defineBackground(() => {
       const requestPromise = translateWithService(text, service, finalDirection, controller.signal)
         .then((result) => {
           mergeTabResults(tabId, text, finalDirection, [result]);
+
+          // 增量通知 UI: 每个服务完成后立即发送更新
+          if (notifyIncremental) {
+            const latestState = getTabSelection(tabId);
+            if (latestState.text === text && latestState.direction === finalDirection) {
+              browser.tabs
+                .sendMessage(tabId, {
+                  action: "updateDetailDialog",
+                  results: getVisibleResults(latestState),
+                  direction: finalDirection,
+                })
+                .catch(() => {});
+            }
+          }
+
           return result;
         })
         .finally(() => {
@@ -363,7 +379,15 @@ export default defineBackground(() => {
         return;
       }
 
-      void requestTabTranslations(tabId, selectedText).catch(() => {});
+      void requestTabTranslations(
+        tabId,
+        selectedText,
+        undefined,
+        undefined,
+        false,
+        false,
+        false,
+      ).catch(() => {});
     });
   }
 
@@ -517,7 +541,15 @@ export default defineBackground(() => {
           .catch(() => {});
       }
 
-      requestTabTranslations(tabId, textToTranslate, selectedServices, direction)
+      requestTabTranslations(
+        tabId,
+        textToTranslate,
+        selectedServices,
+        direction,
+        false,
+        false,
+        true,
+      )
         .then((result) => {
           browser.tabs
             .sendMessage(tabId, {

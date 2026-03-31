@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import Settings from './Settings'
+import { useEffect, useRef, useState } from "react";
+import Settings from "./Settings";
 import {
   CheckIcon,
   CopyIcon,
@@ -11,7 +11,7 @@ import {
   SpeakerIcon,
   StopIcon,
   SunIcon,
-} from '../components/icons'
+} from "../components/icons";
 import {
   buildTranslationSessionKey,
   getServiceLabel,
@@ -27,119 +27,121 @@ import {
   type TranslationResultItem,
   type TranslationResultsByService,
   type TranslationServiceId,
-} from '../../utils/translation'
+} from "../../utils/translation";
 
-type PopupTheme = 'light' | 'dracula'
+type PopupTheme = "light" | "dracula";
 
 interface PopupTranslationSession {
-  sessionKey: string
-  text: string
-  direction: TranslationDirection
-  cachedResultsByService: TranslationResultsByService
+  sessionKey: string;
+  text: string;
+  direction: TranslationDirection;
+  cachedResultsByService: TranslationResultsByService;
 }
 
 const decodeHtmlEntities = (text: string): string => {
-  const doc = new DOMParser().parseFromString(text, 'text/html')
-  return doc.documentElement.textContent || text
-}
+  const doc = new DOMParser().parseFromString(text, "text/html");
+  return doc.documentElement.textContent || text;
+};
 
 const decodeResults = (results: TranslationResultItem[]): TranslationResultItem[] => {
-  return results.map(result =>
-    result.status === 'success'
+  return results.map((result) =>
+    result.status === "success"
       ? {
           ...result,
           translation: decodeHtmlEntities(result.translation),
         }
       : result,
-  )
-}
+  );
+};
 
 function App() {
-  const [inputText, setInputText] = useState('')
-  const [results, setResults] = useState<TranslationResultItem[]>([])
-  const [targetLang, setTargetLang] = useState<TranslationDirection>('en')
-  const [error, setError] = useState('')
-  const [copiedService, setCopiedService] = useState<TranslationServiceId | null>(null)
-  const [speakingService, setSpeakingService] = useState<TranslationServiceId | null>(null)
-  const [selectedServices, setSelectedServices] = useState<TranslationServiceId[]>([])
-  const [visibleServiceOptions, setVisibleServiceOptions] = useState<TranslationServiceOption[]>([])
-  const [pendingServices, setPendingServices] = useState<TranslationServiceId[]>([])
-  const [theme, setTheme] = useState<PopupTheme>('light')
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isServiceMenuOpen, setIsServiceMenuOpen] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const serviceMenuRef = useRef<HTMLDivElement>(null)
-  const sessionRef = useRef<PopupTranslationSession | null>(null)
-  const selectedServicesRef = useRef<TranslationServiceId[]>([])
-  const requestControllersRef = useRef<Map<TranslationServiceId, AbortController>>(new Map())
+  const [inputText, setInputText] = useState("");
+  const [results, setResults] = useState<TranslationResultItem[]>([]);
+  const [targetLang, setTargetLang] = useState<TranslationDirection>("en");
+  const [error, setError] = useState("");
+  const [copiedService, setCopiedService] = useState<TranslationServiceId | null>(null);
+  const [speakingService, setSpeakingService] = useState<TranslationServiceId | null>(null);
+  const [selectedServices, setSelectedServices] = useState<TranslationServiceId[]>([]);
+  const [visibleServiceOptions, setVisibleServiceOptions] = useState<TranslationServiceOption[]>(
+    [],
+  );
+  const [pendingServices, setPendingServices] = useState<TranslationServiceId[]>([]);
+  const [theme, setTheme] = useState<PopupTheme>("light");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isServiceMenuOpen, setIsServiceMenuOpen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const serviceMenuRef = useRef<HTMLDivElement>(null);
+  const sessionRef = useRef<PopupTranslationSession | null>(null);
+  const selectedServicesRef = useRef<TranslationServiceId[]>([]);
+  const requestControllersRef = useRef<Map<TranslationServiceId, AbortController>>(new Map());
   const requestPromisesRef = useRef<Map<TranslationServiceId, Promise<TranslationResultItem>>>(
     new Map(),
-  )
-  const pendingServicesRef = useRef<Set<TranslationServiceId>>(new Set())
+  );
+  const pendingServicesRef = useRef<Set<TranslationServiceId>>(new Set());
 
-  const isLoading = pendingServices.length > 0
+  const isLoading = pendingServices.length > 0;
 
   const refreshServicePreferences = async () => {
-    const preferences = await getTranslationServicePreferences()
-    setSelectedServices(preferences.selectedServices)
-    setVisibleServiceOptions(preferences.visibleServiceOptions)
-    selectedServicesRef.current = preferences.selectedServices
+    const preferences = await getTranslationServicePreferences();
+    setSelectedServices(preferences.selectedServices);
+    setVisibleServiceOptions(preferences.visibleServiceOptions);
+    selectedServicesRef.current = preferences.selectedServices;
 
     if (speakingService && !preferences.selectedServices.includes(speakingService)) {
-      window.speechSynthesis.cancel()
-      setSpeakingService(null)
+      window.speechSynthesis.cancel();
+      setSpeakingService(null);
     }
 
-    syncResultsFromCache(preferences.selectedServices)
-    syncPendingServices(preferences.selectedServices)
+    syncResultsFromCache(preferences.selectedServices);
+    syncPendingServices(preferences.selectedServices);
 
-    return preferences
-  }
+    return preferences;
+  };
 
   const syncResultsFromCache = (services: TranslationServiceId[] = selectedServicesRef.current) => {
-    const currentSession = sessionRef.current
+    const currentSession = sessionRef.current;
     if (!currentSession) {
-      setResults([])
-      return
+      setResults([]);
+      return;
     }
 
-    setResults(orderResultsByServices(currentSession.cachedResultsByService, services))
-  }
+    setResults(orderResultsByServices(currentSession.cachedResultsByService, services));
+  };
 
   const syncPendingServices = (services: TranslationServiceId[] = selectedServicesRef.current) => {
-    setPendingServices(services.filter(service => pendingServicesRef.current.has(service)))
-  }
+    setPendingServices(services.filter((service) => pendingServicesRef.current.has(service)));
+  };
 
   const abortAllRequests = () => {
-    requestControllersRef.current.forEach(controller => controller.abort())
-    requestControllersRef.current.clear()
-    requestPromisesRef.current.clear()
-    pendingServicesRef.current.clear()
-    syncPendingServices()
-  }
+    requestControllersRef.current.forEach((controller) => controller.abort());
+    requestControllersRef.current.clear();
+    requestPromisesRef.current.clear();
+    pendingServicesRef.current.clear();
+    syncPendingServices();
+  };
 
   const resetSession = (text: string, translationDirection: TranslationDirection) => {
-    abortAllRequests()
+    abortAllRequests();
     sessionRef.current = {
       sessionKey: buildTranslationSessionKey(text, translationDirection),
       text,
       direction: translationDirection,
       cachedResultsByService: {},
-    }
-    syncResultsFromCache([])
-  }
+    };
+    syncResultsFromCache([]);
+  };
 
   const mergeResultsIntoSession = (translationResults: TranslationResultItem[]) => {
-    const currentSession = sessionRef.current
+    const currentSession = sessionRef.current;
     if (!currentSession) {
-      return
+      return;
     }
 
     currentSession.cachedResultsByService = {
       ...currentSession.cachedResultsByService,
       ...mapResultsByService(decodeResults(translationResults)),
-    }
-  }
+    };
+  };
 
   /**
    * Requests a single provider and keeps the local session cache in sync so
@@ -150,177 +152,177 @@ function App() {
     translationDirection: TranslationDirection,
     service: TranslationServiceId,
   ): Promise<TranslationResultItem> => {
-    const existingPromise = requestPromisesRef.current.get(service)
+    const existingPromise = requestPromisesRef.current.get(service);
     if (existingPromise) {
-      return existingPromise
+      return existingPromise;
     }
 
-    const controller = new AbortController()
-    requestControllersRef.current.set(service, controller)
-    pendingServicesRef.current.add(service)
-    syncPendingServices()
+    const controller = new AbortController();
+    requestControllersRef.current.set(service, controller);
+    pendingServicesRef.current.add(service);
+    syncPendingServices();
 
-    const sessionKey = buildTranslationSessionKey(text, translationDirection)
+    const sessionKey = buildTranslationSessionKey(text, translationDirection);
     const requestPromise = translateWithService(
       text,
       service,
       translationDirection,
       controller.signal,
     )
-      .then(result => {
+      .then((result) => {
         if (sessionRef.current?.sessionKey === sessionKey) {
-          mergeResultsIntoSession([result])
-          syncResultsFromCache()
+          mergeResultsIntoSession([result]);
+          syncResultsFromCache();
         }
 
-        return result
+        return result;
       })
       .finally(() => {
-        const currentController = requestControllersRef.current.get(service)
+        const currentController = requestControllersRef.current.get(service);
         if (currentController?.signal === controller.signal) {
-          requestControllersRef.current.delete(service)
+          requestControllersRef.current.delete(service);
         }
 
         if (requestPromisesRef.current.get(service) === requestPromise) {
-          requestPromisesRef.current.delete(service)
+          requestPromisesRef.current.delete(service);
         }
 
-        pendingServicesRef.current.delete(service)
-        syncPendingServices()
-      })
+        pendingServicesRef.current.delete(service);
+        syncPendingServices();
+      });
 
-    requestPromisesRef.current.set(service, requestPromise)
-    return requestPromise
-  }
+    requestPromisesRef.current.set(service, requestPromise);
+    return requestPromise;
+  };
 
   const runTranslation = async (
     services: TranslationServiceId[],
     translationDirection: TranslationDirection,
     forceRefresh: boolean,
   ) => {
-    const trimmedText = inputText.trim()
+    const trimmedText = inputText.trim();
     if (!trimmedText) {
-      return
+      return;
     }
 
     if (services.length === 0) {
-      setResults([])
-      setPendingServices([])
-      setError('至少选择一个翻译服务')
-      return
+      setResults([]);
+      setPendingServices([]);
+      setError("至少选择一个翻译服务");
+      return;
     }
 
-    const sessionKey = buildTranslationSessionKey(trimmedText, translationDirection)
-    const currentSession = sessionRef.current
-    const isSameSession = currentSession?.sessionKey === sessionKey
+    const sessionKey = buildTranslationSessionKey(trimmedText, translationDirection);
+    const currentSession = sessionRef.current;
+    const isSameSession = currentSession?.sessionKey === sessionKey;
 
     if (!isSameSession || forceRefresh) {
-      resetSession(trimmedText, translationDirection)
+      resetSession(trimmedText, translationDirection);
     } else {
     }
 
-    const session = sessionRef.current
+    const session = sessionRef.current;
     if (!session) {
-      return
+      return;
     }
 
-    setError('')
-    setIsServiceMenuOpen(false)
-    syncResultsFromCache(services)
-    syncPendingServices(services)
+    setError("");
+    setIsServiceMenuOpen(false);
+    syncResultsFromCache(services);
+    syncPendingServices(services);
 
     const servicesToRequest =
       forceRefresh || !isSameSession
         ? services
         : services.filter(
-            service =>
+            (service) =>
               !session.cachedResultsByService[service] && !requestPromisesRef.current.has(service),
-          )
+          );
 
     if (servicesToRequest.length === 0) {
-      syncResultsFromCache(services)
-      return
+      syncResultsFromCache(services);
+      return;
     }
 
     try {
       await Promise.all(
-        servicesToRequest.map(service =>
+        servicesToRequest.map((service) =>
           requestServiceResult(trimmedText, translationDirection, service),
         ),
-      )
+      );
     } catch (translateError: unknown) {
       if (isAbortError(translateError)) {
-        return
+        return;
       }
 
-      const message = translateError instanceof Error ? translateError.message : '翻译出错'
-      setError(message)
+      const message = translateError instanceof Error ? translateError.message : "翻译出错";
+      setError(message);
     }
-  }
+  };
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
       if (
-        event.key === '/' &&
-        document.activeElement?.tagName !== 'TEXTAREA' &&
-        document.activeElement?.tagName !== 'INPUT'
+        event.key === "/" &&
+        document.activeElement?.tagName !== "TEXTAREA" &&
+        document.activeElement?.tagName !== "INPUT"
       ) {
-        event.preventDefault()
-        textareaRef.current?.focus()
+        event.preventDefault();
+        textareaRef.current?.focus();
       }
-    }
+    };
 
-    window.addEventListener('keydown', handleGlobalKeyDown)
+    window.addEventListener("keydown", handleGlobalKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleGlobalKeyDown)
-      abortAllRequests()
-      window.speechSynthesis.cancel()
-    }
-  }, [])
+      window.removeEventListener("keydown", handleGlobalKeyDown);
+      abortAllRequests();
+      window.speechSynthesis.cancel();
+    };
+  }, []);
 
   useEffect(() => {
-    window.speechSynthesis.cancel()
-    setSpeakingService(null)
-  }, [results])
+    window.speechSynthesis.cancel();
+    setSpeakingService(null);
+  }, [results]);
 
   useEffect(() => {
-    selectedServicesRef.current = selectedServices
-    syncPendingServices(selectedServices)
-  }, [selectedServices])
+    selectedServicesRef.current = selectedServices;
+    syncPendingServices(selectedServices);
+  }, [selectedServices]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
       if (!serviceMenuRef.current?.contains(event.target as Node)) {
-        setIsServiceMenuOpen(false)
+        setIsServiceMenuOpen(false);
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener("mousedown", handlePointerDown);
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
-    }
-  }, [])
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, []);
 
   useEffect(() => {
     const loadInitialState = async () => {
-      const storage = await browser.storage.local.get(['theme'])
-      await refreshServicePreferences()
+      const storage = await browser.storage.local.get(["theme"]);
+      await refreshServicePreferences();
 
-      const nextTheme = storage.theme === 'dracula' ? 'dracula' : 'light'
-      setTheme(nextTheme)
-      document.documentElement.setAttribute('data-theme', nextTheme)
-    }
+      const nextTheme = storage.theme === "dracula" ? "dracula" : "light";
+      setTheme(nextTheme);
+      document.documentElement.setAttribute("data-theme", nextTheme);
+    };
 
-    void loadInitialState()
-  }, [])
+    void loadInitialState();
+  }, []);
 
   const handleSettingsSaved = async () => {
-    const preferences = await refreshServicePreferences()
+    const preferences = await refreshServicePreferences();
 
     if (inputText.trim()) {
-      void runTranslation(preferences.selectedServices, targetLang, false)
+      void runTranslation(preferences.selectedServices, targetLang, false);
     }
-  }
+  };
 
   const handleTranslate = async (
     servicesOverride?: TranslationServiceId[],
@@ -330,126 +332,127 @@ function App() {
       servicesOverride ?? selectedServicesRef.current,
       targetLangOverride ?? targetLang,
       true,
-    )
-  }
+    );
+  };
 
   /**
    * Drops one cached provider result before retrying so its card can switch
    * back to the loading state without disturbing other finished providers.
    */
   const handleRetryService = async (service: TranslationServiceId) => {
-    const currentSession = sessionRef.current
+    const currentSession = sessionRef.current;
     if (!currentSession || requestPromisesRef.current.has(service)) {
-      return
+      return;
     }
 
-    const { [service]: _removedResult, ...remainingResults } = currentSession.cachedResultsByService
-    currentSession.cachedResultsByService = remainingResults
-    syncResultsFromCache()
-    setError('')
+    const { [service]: _removedResult, ...remainingResults } =
+      currentSession.cachedResultsByService;
+    currentSession.cachedResultsByService = remainingResults;
+    syncResultsFromCache();
+    setError("");
 
     try {
-      await requestServiceResult(currentSession.text, currentSession.direction, service)
+      await requestServiceResult(currentSession.text, currentSession.direction, service);
     } catch (translateError: unknown) {
       if (isAbortError(translateError)) {
-        return
+        return;
       }
 
-      const message = translateError instanceof Error ? translateError.message : '翻译出错'
-      setError(message)
+      const message = translateError instanceof Error ? translateError.message : "翻译出错";
+      setError(message);
     }
-  }
+  };
 
   const handleServiceToggle = async (service: TranslationServiceId) => {
     const nextServices = selectedServicesRef.current.includes(service)
-      ? selectedServicesRef.current.filter(item => item !== service)
-      : [...selectedServicesRef.current, service]
+      ? selectedServicesRef.current.filter((item) => item !== service)
+      : [...selectedServicesRef.current, service];
 
-    setSelectedServices(nextServices)
-    selectedServicesRef.current = nextServices
-    await persistSelectedServices(nextServices)
+    setSelectedServices(nextServices);
+    selectedServicesRef.current = nextServices;
+    await persistSelectedServices(nextServices);
 
     if (!nextServices.includes(service) && speakingService === service) {
-      window.speechSynthesis.cancel()
-      setSpeakingService(null)
+      window.speechSynthesis.cancel();
+      setSpeakingService(null);
     }
 
-    syncResultsFromCache(nextServices)
-    syncPendingServices(nextServices)
+    syncResultsFromCache(nextServices);
+    syncPendingServices(nextServices);
 
     if (nextServices.length === 0) {
-      setError('至少选择一个翻译服务')
-      return
+      setError("至少选择一个翻译服务");
+      return;
     }
 
-    setError('')
+    setError("");
     if (inputText.trim()) {
-      void runTranslation(nextServices, targetLang, false)
+      void runTranslation(nextServices, targetLang, false);
     }
-  }
+  };
 
   const handleLanguageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newLang: TranslationDirection = event.target.checked ? 'zh' : 'en'
-    setTargetLang(newLang)
+    const newLang: TranslationDirection = event.target.checked ? "zh" : "en";
+    setTargetLang(newLang);
 
     if (inputText.trim() && selectedServicesRef.current.length > 0) {
-      void runTranslation(selectedServicesRef.current, newLang, true)
+      void runTranslation(selectedServicesRef.current, newLang, true);
     }
-  }
+  };
 
   const toggleTheme = async () => {
-    const nextTheme: PopupTheme = theme === 'light' ? 'dracula' : 'light'
-    setTheme(nextTheme)
-    document.documentElement.setAttribute('data-theme', nextTheme)
-    await browser.storage.local.set({ theme: nextTheme })
-  }
+    const nextTheme: PopupTheme = theme === "light" ? "dracula" : "light";
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    await browser.storage.local.set({ theme: nextTheme });
+  };
 
   const handleCopy = async (service: TranslationServiceId, text: string) => {
     if (!text) {
-      return
+      return;
     }
 
-    await navigator.clipboard.writeText(text)
-    setCopiedService(service)
+    await navigator.clipboard.writeText(text);
+    setCopiedService(service);
     window.setTimeout(
-      () => setCopiedService(current => (current === service ? null : current)),
+      () => setCopiedService((current) => (current === service ? null : current)),
       2000,
-    )
-  }
+    );
+  };
 
   const handleSpeak = (result: TranslationResultItem) => {
-    if (result.status !== 'success' || !result.translation) {
-      return
+    if (result.status !== "success" || !result.translation) {
+      return;
     }
 
     if (speakingService === result.service) {
-      window.speechSynthesis.cancel()
-      setSpeakingService(null)
-      return
+      window.speechSynthesis.cancel();
+      setSpeakingService(null);
+      return;
     }
 
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(result.translation)
-    utterance.lang = result.direction === 'zh' ? 'zh-CN' : 'en-US'
-    utterance.onstart = () => setSpeakingService(result.service)
-    utterance.onend = () => setSpeakingService(null)
-    utterance.onerror = () => setSpeakingService(null)
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(result.translation);
+    utterance.lang = result.direction === "zh" ? "zh-CN" : "en-US";
+    utterance.onstart = () => setSpeakingService(result.service);
+    utterance.onend = () => setSpeakingService(null);
+    utterance.onerror = () => setSpeakingService(null);
 
-    window.speechSynthesis.speak(utterance)
-  }
+    window.speechSynthesis.speak(utterance);
+  };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && event.shiftKey) {
-      event.preventDefault()
-      void handleTranslate()
+    if (event.key === "Enter" && event.shiftKey) {
+      event.preventDefault();
+      void handleTranslate();
     }
-  }
+  };
 
-  const resultMap = new Map(results.map(result => [result.service, result]))
-  const pendingServiceSet = new Set(pendingServices)
+  const resultMap = new Map(results.map((result) => [result.service, result]));
+  const pendingServiceSet = new Set(pendingServices);
   const visibleServices = selectedServices.filter(
-    service => resultMap.has(service) || pendingServiceSet.has(service),
-  )
+    (service) => resultMap.has(service) || pendingServiceSet.has(service),
+  );
 
   return (
     <div className="h-full overflow-hidden bg-base-100 text-base-content flex flex-col font-sans relative">
@@ -475,7 +478,7 @@ function App() {
             onClick={toggleTheme}
             title="切换主题"
           >
-            {theme === 'light' ? <SunIcon className="h-3 w-3" /> : <MoonIcon className="h-3 w-3" />}
+            {theme === "light" ? <SunIcon className="h-3 w-3" /> : <MoonIcon className="h-3 w-3" />}
           </button>
           <button
             className="btn btn-ghost btn-circle btn-xs"
@@ -493,9 +496,9 @@ function App() {
             autoFocus
             ref={textareaRef}
             className="textarea textarea-bordered w-full h-28 resize-none transition-colors"
-            placeholder={`输入要翻译的文字到${targetLang === 'zh' ? '中文' : '英文'}... (Shift+Enter 快速翻译)`}
+            placeholder={`输入要翻译的文字到${targetLang === "zh" ? "中文" : "英文"}... (Shift+Enter 快速翻译)`}
             value={inputText}
-            onChange={event => setInputText(event.target.value)}
+            onChange={(event) => setInputText(event.target.value)}
             onKeyDown={handleKeyDown}
           />
         </div>
@@ -507,27 +510,27 @@ function App() {
               onClick={() => void handleTranslate()}
               disabled={!inputText.trim() || selectedServices.length === 0}
             >
-              {isLoading ? <span className="loading loading-spinner loading-sm"></span> : '翻译'}
+              {isLoading ? <span className="loading loading-spinner loading-sm"></span> : "翻译"}
             </button>
             <div ref={serviceMenuRef} className="dropdown dropdown-bottom relative w-36 shrink-0">
               <button
                 type="button"
                 className="btn btn-outline btn-primary btn-xs h-8 min-h-8 w-full justify-between px-3"
-                onClick={() => setIsServiceMenuOpen(current => !current)}
+                onClick={() => setIsServiceMenuOpen((current) => !current)}
               >
                 <span className="truncate text-xs font-normal text-neutral-800 dark:text-neutral-200">
                   {getSelectedServicesSummary(selectedServices)}
                 </span>
                 <span
-                  className={`text-xs transition-transform ${isServiceMenuOpen ? 'rotate-180' : ''}`}
+                  className={`text-xs transition-transform ${isServiceMenuOpen ? "rotate-180" : ""}`}
                 >
                   ▼
                 </span>
               </button>
               {isServiceMenuOpen && (
                 <div className="absolute left-0 top-full z-30 mt-2 w-38 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg space-y-1">
-                  {visibleServiceOptions.map(serviceOption => {
-                    const isSelected = selectedServices.includes(serviceOption.id)
+                  {visibleServiceOptions.map((serviceOption) => {
+                    const isSelected = selectedServices.includes(serviceOption.id);
                     return (
                       <button
                         key={serviceOption.id}
@@ -538,7 +541,7 @@ function App() {
                       >
                         <span
                           className={`w-4 text-center text-sm font-semibold ${
-                            isSelected ? 'text-primary' : 'opacity-0'
+                            isSelected ? "text-primary" : "opacity-0"
                           }`}
                           aria-hidden="true"
                         >
@@ -546,7 +549,7 @@ function App() {
                         </span>
                         <span className="label-text flex-1">{serviceOption.label}</span>
                       </button>
-                    )
+                    );
                   })}
                   {selectedServices.length === 0 && (
                     <p className="px-2 pt-1 text-xs text-error">至少选择一个翻译服务</p>
@@ -560,7 +563,7 @@ function App() {
             >
               <input
                 type="checkbox"
-                checked={targetLang === 'zh'}
+                checked={targetLang === "zh"}
                 onChange={handleLanguageChange}
               />
               <span className="swap-on text-xs font-semibold">中</span>
@@ -581,8 +584,8 @@ function App() {
 
         {visibleServices.length > 0 && (
           <div className="space-y-3">
-            {visibleServices.map(service => {
-              const result = resultMap.get(service)
+            {visibleServices.map((service) => {
+              const result = resultMap.get(service);
 
               if (!result) {
                 return (
@@ -606,7 +609,7 @@ function App() {
                       </div>
                     </div>
                   </div>
-                )
+                );
               }
 
               return (
@@ -622,7 +625,7 @@ function App() {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        {result.status === 'error' ? (
+                        {result.status === "error" ? (
                           <button
                             className="btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0"
                             onClick={() => void handleRetryService(result.service)}
@@ -634,11 +637,11 @@ function App() {
                           <>
                             <button
                               className={`btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0 ${
-                                speakingService === result.service ? 'text-primary' : ''
+                                speakingService === result.service ? "text-primary" : ""
                               }`}
                               onClick={() => handleSpeak(result)}
-                              title={speakingService === result.service ? '停止朗读' : '朗读'}
-                              disabled={result.status !== 'success'}
+                              title={speakingService === result.service ? "停止朗读" : "朗读"}
+                              disabled={result.status !== "success"}
                             >
                               {speakingService === result.service ? (
                                 <StopIcon className="h-3 w-3" />
@@ -650,7 +653,7 @@ function App() {
                               className="btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0"
                               onClick={() => void handleCopy(result.service, result.translation)}
                               title="复制"
-                              disabled={result.status !== 'success'}
+                              disabled={result.status !== "success"}
                             >
                               {copiedService === result.service ? (
                                 <CheckIcon className="h-3 w-3 text-green-500 shrink-0" />
@@ -663,7 +666,7 @@ function App() {
                       </div>
                     </div>
 
-                    {result.status === 'success' ? (
+                    {result.status === "success" ? (
                       <p className="text-sm whitespace-pre-wrap">{result.translation}</p>
                     ) : (
                       <div className="alert alert-error alert-soft py-1">
@@ -673,7 +676,7 @@ function App() {
                     )}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         )}
@@ -697,7 +700,7 @@ function App() {
         </a>
       </footer>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

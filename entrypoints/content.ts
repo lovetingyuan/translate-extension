@@ -65,7 +65,7 @@ export default defineContentScript({
       if (message.action === "showLoadingDialog") {
         dialog.showLoading(message.originalText);
       } else if (message.action === "updateDetailDialog") {
-        dialog.updateSuccess(message.results, message.direction);
+        dialog.updateIncremental(message.results, message.direction);
       } else if (message.action === "updateDetailDialogError") {
         dialog.updateError(message.message);
       } else if (message.action === "showDetailDialog") {

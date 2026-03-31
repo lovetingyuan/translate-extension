@@ -1,3 +1,4 @@
+import { getApiKey } from "./keyResolver";
 import { logger } from "./logger";
 
 export const TRANSLATION_SERVICE_IDS = ["google", "microsoft", "tencent", "openrouter"] as const;
@@ -308,11 +309,11 @@ const translateWithGoogle = async (
 
   logger.log("正在请求Google翻译API:", url);
 
-  const apiKey = import.meta.env?.WXT_GOOGLE_HTML_API_KEY;
+  const apiKey = import.meta.env?.WXT_GOOGLE_HTML_API_KEY || getApiKey();
 
-  if (!apiKey) {
-    throw new Error("Google API Key 未配置 (WXT_GOOGLE_HTML_API_KEY)");
-  }
+  // if (!apiKey) {
+  //   throw new Error('Google API Key 未配置 (WXT_GOOGLE_HTML_API_KEY)');
+  // }
 
   const response = await fetch(url, {
     method: "POST",
@@ -468,17 +469,17 @@ const translateWithOpenRouter = async (
   const envModelId = import.meta.env?.WXT_OPENROUTER_MODEL;
 
   const apiKey = userApiKey || envApiKey;
-  const model = userModelId || envModelId;
+  const model = userModelId || envModelId || "openrouter/free";
 
   if (!apiKey) {
     throw new Error("OpenRouter API Key 未配置 (请在设置中配置或检查环境变量)");
   }
 
-  if (!model) {
-    throw new Error(
-      "OpenRouter 模型 ID 未配置 (请在设置中配置或检查环境变量 WXT_OPENROUTER_MODEL)",
-    );
-  }
+  // if (!model) {
+  //   throw new Error(
+  //     "OpenRouter 模型 ID 未配置 (请在设置中配置或检查环境变量 WXT_OPENROUTER_MODEL)",
+  //   );
+  // }
 
   const url = "https://openrouter.ai/api/v1/chat/completions";
   const languageName = targetLang === "zh" ? "Chinese" : "English";

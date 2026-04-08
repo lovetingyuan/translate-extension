@@ -32,13 +32,16 @@ export const TranslationControls = ({
   onServiceToggle,
   onServiceMenuClose,
 }: TranslationControlsProps) => {
+  const isTranslateDisabled =
+    isLoading || !inputText.trim() || selectedServices.length === 0;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <button
           className="btn btn-outline btn-primary btn-xs h-8 min-h-8 min-w-0 flex-1 px-4"
           onClick={onTranslate}
-          disabled={!inputText.trim() || selectedServices.length === 0}
+          disabled={isTranslateDisabled}
         >
           {isLoading ? <span className="loading loading-spinner loading-sm"></span> : "翻译"}
         </button>

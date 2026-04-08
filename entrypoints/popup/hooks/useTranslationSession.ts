@@ -169,10 +169,10 @@ export const useTranslationSession = () => {
       services: TranslationServiceId[],
       translationDirection: TranslationDirection,
       forceRefresh: boolean,
-    ): Promise<void> => {
+    ): Promise<boolean> => {
       const trimmedText = text.trim();
       if (!trimmedText || services.length === 0) {
-        return;
+        return false;
       }
 
       const sessionKey = buildTranslationSessionKey(trimmedText, translationDirection);
@@ -185,7 +185,7 @@ export const useTranslationSession = () => {
 
       const latestSession = sessionRef.current;
       if (!latestSession) {
-        return;
+        return false;
       }
 
       const servicesToRequest =
@@ -198,7 +198,7 @@ export const useTranslationSession = () => {
             );
 
       if (servicesToRequest.length === 0) {
-        return;
+        return false;
       }
 
       await Promise.all(
@@ -206,6 +206,8 @@ export const useTranslationSession = () => {
           requestServiceResult(trimmedText, translationDirection, service),
         ),
       );
+
+      return true;
     },
     [resetSession, requestServiceResult],
   );

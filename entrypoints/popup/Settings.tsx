@@ -1,39 +1,46 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react'
 
 interface SettingsProps {
-  onClose: () => void;
-  onSaved: () => void | Promise<void>;
+  onClose: () => void
+  onSaved: () => void | Promise<void>
 }
 
 export default function Settings({ onClose, onSaved }: SettingsProps) {
-  const [apiKey, setApiKey] = useState("");
-  const [modelId, setModelId] = useState("");
-  const [saveError, setSaveError] = useState("");
+  const [apiKey, setApiKey] = useState('')
+  const [modelId, setModelId] = useState('')
+  const [deeplApiKey, setDeeplApiKey] = useState('')
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
     const loadSettings = async () => {
-      const res = await browser.storage.local.get(["openRouterApiKey", "openRouterModelId"]);
+      const res = await browser.storage.local.get([
+        'openRouterApiKey',
+        'openRouterModelId',
+        'deeplApiKey',
+      ])
 
-      if (res.openRouterApiKey) setApiKey(res.openRouterApiKey as string);
-      if (res.openRouterModelId) setModelId(res.openRouterModelId as string);
-    };
+      if (res.openRouterApiKey) setApiKey(res.openRouterApiKey as string)
+      if (res.openRouterModelId) setModelId(res.openRouterModelId as string)
+      if (res.deeplApiKey) setDeeplApiKey(res.deeplApiKey as string)
+    }
 
-    void loadSettings();
-  }, []);
+    void loadSettings()
+  }, [])
 
   const handleSave = async () => {
     try {
-      setSaveError("");
+      setSaveError('')
       await browser.storage.local.set({
         openRouterApiKey: apiKey,
         openRouterModelId: modelId,
-      });
-      await onSaved();
-      onClose();
+        deeplApiKey,
+      })
+      await onSaved()
+      onClose()
     } catch (error: unknown) {
-      setSaveError(error instanceof Error ? error.message : "保存设置失败");
+      setSaveError(error instanceof Error ? error.message : '保存设置失败')
     }
-  };
+  }
 
   return (
     <div className="absolute inset-0 bg-base-100 z-50 flex flex-col">
@@ -55,6 +62,27 @@ export default function Settings({ onClose, onSaved }: SettingsProps) {
       <div className="p-4 space-y-4 flex-1 overflow-y-auto">
         <div className="form-control w-full">
           <label className="label">
+            <span className="label-text font-medium mb-1">DeepL API Key</span>
+            <a
+              href="https://www.deepl.com/zh/your-account/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="label-text-alt link link-primary mb-1"
+            >
+              Get Key ↗
+            </a>
+          </label>
+          <input
+            type="text"
+            placeholder="deepl-api-key"
+            className="input input-bordered input-sm w-full"
+            value={deeplApiKey}
+            onChange={e => setDeeplApiKey(e.target.value)}
+          />
+        </div>
+
+        <div className="form-control w-full">
+          <label className="label">
             <span className="label-text font-medium mb-1">OpenRouter API Key</span>
             <a
               href="https://openrouter.ai/keys"
@@ -70,7 +98,7 @@ export default function Settings({ onClose, onSaved }: SettingsProps) {
             placeholder="sk-or-..."
             className="input input-bordered input-sm w-full"
             value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+            onChange={e => setApiKey(e.target.value)}
           />
         </div>
 
@@ -91,11 +119,11 @@ export default function Settings({ onClose, onSaved }: SettingsProps) {
             placeholder="openrouter/free"
             className="input input-bordered input-sm w-full"
             value={modelId}
-            onChange={(e) => setModelId(e.target.value)}
+            onChange={e => setModelId(e.target.value)}
           />
         </div>
         {saveError && <p className="text-xs text-error">{saveError}</p>}
       </div>
     </div>
-  );
+  )
 }

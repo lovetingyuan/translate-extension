@@ -1,17 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import Settings from "./Settings";
 import { ErrorIcon } from "../components/icons";
-import type { TranslationDirection, TranslationServiceId } from "../../utils/translation";
+import {
+  detectDirection,
+  type TranslationDirection,
+  type TranslationServiceId,
+} from "../../utils/translation";
 import { useTranslationSession } from "./hooks/useTranslationSession";
 import { useServicePreferences } from "./hooks/useServicePreferences";
 import { useTheme } from "./hooks/useTheme";
 import { useSpeech } from "./hooks/useSpeech";
 import { useCopy } from "./hooks/useCopy";
+import { useTranslationHistory } from "./hooks/useTranslationHistory";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { TranslationInput } from "./components/TranslationInput";
 import { TranslationControls } from "./components/TranslationControls";
 import { ResultList } from "./components/ResultList";
+import { TranslationHistory } from "./components/TranslationHistory";
 
 function App() {
   const [inputText, setInputText] = useState("");
@@ -39,17 +45,19 @@ function App() {
   const { theme, toggleTheme } = useTheme();
   const { speakingService, handleSpeak, stopSpeaking } = useSpeech();
   const { copiedService, handleCopy } = useCopy();
+  const { historyItems, recordHistory } = useTranslationHistory();
 
   const currentResults = getCurrentResults(selectedServices);
   const currentPendingServices = getCurrentPendingServices(selectedServices);
   const isLoading = currentPendingServices.length > 0;
 
   const runTranslation = async (
+    sourceText: string,
     services: TranslationServiceId[],
     translationDirection: TranslationDirection,
     forceRefresh: boolean,
   ) => {
-    const trimmedText = inputText.trim();
+    const trimmedText = sourceText.trim();
     if (!trimmedText) {
       return;
     }
@@ -63,12 +71,16 @@ function App() {
     setIsServiceMenuOpen(false);
 
     try {
-      await sessionRunTranslation(
+      const didRequest = await sessionRunTranslation(
         trimmedText,
         services,
         translationDirection,
         forceRefresh,
       );
+
+      if (didRequest) {
+        await recordHistory(trimmedText);
+      }
     } catch (translateError: unknown) {
       if (checkIsAbortError(translateError)) {
         return;
@@ -114,7 +126,7 @@ function App() {
     }
 
     if (inputText.trim()) {
-      void runTranslation(preferences.selectedServices, targetLang, false);
+      void runTranslation(inputText, preferences.selectedServices, targetLang, false);
     }
   };
 
@@ -123,6 +135,7 @@ function App() {
     targetLangOverride?: TranslationDirection,
   ) => {
     await runTranslation(
+      inputText,
       servicesOverride ?? selectedServicesRef.current,
       targetLangOverride ?? targetLang,
       true,
@@ -158,7 +171,7 @@ function App() {
 
     setError("");
     if (inputText.trim()) {
-      void runTranslation(nextServices, targetLang, false);
+      void runTranslation(inputText, nextServices, targetLang, false);
     }
   };
 
@@ -167,7 +180,15 @@ function App() {
     setTargetLang(newLang);
 
     if (inputText.trim() && selectedServicesRef.current.length > 0) {
-      void runTranslation(selectedServicesRef.current, newLang, true);
+      void runTranslation(inputText, selectedServicesRef.current, newLang, true);
+    }
+  };
+
+  const handleInputChange = (value: string) => {
+    setInputText(value);
+
+    if (value.trim()) {
+      setTargetLang(detectDirection(value));
     }
   };
 
@@ -175,6 +196,17 @@ function App() {
     if (event.key === "Enter" && event.shiftKey) {
       event.preventDefault();
       void handleTranslate();
+    }
+  };
+
+  const handleHistorySelect = (text: string) => {
+    setInputText(text);
+
+    const detectedDirection = detectDirection(text);
+    setTargetLang(detectedDirection);
+
+    if (selectedServicesRef.current.length > 0) {
+      void runTranslation(text, selectedServicesRef.current, detectedDirection, true);
     }
   };
 
@@ -202,9 +234,11 @@ function App() {
           value={inputText}
           targetLang={targetLang}
           textareaRef={textareaRef}
-          onChange={setInputText}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
         />
+
+        <TranslationHistory items={historyItems} onSelect={handleHistorySelect} />
 
         <TranslationControls
           isLoading={isLoading}

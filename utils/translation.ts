@@ -12,6 +12,7 @@ export const TRANSLATION_SERVICE_IDS = [
 export type TranslationServiceId = (typeof TRANSLATION_SERVICE_IDS)[number];
 export type TranslationDirection = "zh" | "en";
 export type TranslationResultStatus = "success" | "error";
+export type TranslationHistoryItem = string;
 
 export interface TranslationServiceOption {
   id: TranslationServiceId;
@@ -98,6 +99,8 @@ const EXPIRATION_BUFFER_MS = 1000;
 const SELECTED_SERVICES_STORAGE_KEY = "selectedServices";
 const LEGACY_SELECTED_SERVICE_STORAGE_KEY = "selectedService";
 const HIDDEN_SERVICES_STORAGE_KEY = "hiddenServices";
+const TRANSLATION_HISTORY_STORAGE_KEY = "translationHistory";
+const MAX_TRANSLATION_HISTORY_ITEMS = 5;
 
 export const TRANSLATION_SERVICE_OPTIONS: TranslationServiceOption[] = [
   { id: "google", label: "Google" },
@@ -131,6 +134,36 @@ const normalizeServiceIds = (value: unknown): TranslationServiceId[] => {
     }
     return services;
   }, []);
+};
+
+/**
+ * Popup 历史记录只保存原文字符串，因此在写入前统一做 trim、去空、去重和数量裁剪，
+ * 保证 UI 层读取到的始终是可直接展示的最近记录列表。
+ */
+const normalizeTranslationHistory = (value: unknown): TranslationHistoryItem[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const items: TranslationHistoryItem[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") {
+      continue;
+    }
+
+    const normalizedItem = item.trim();
+    if (!normalizedItem || items.includes(normalizedItem)) {
+      continue;
+    }
+
+    items.push(normalizedItem);
+
+    if (items.length >= MAX_TRANSLATION_HISTORY_ITEMS) {
+      break;
+    }
+  }
+
+  return items;
 };
 
 const areSameServiceLists = (
@@ -725,6 +758,46 @@ export const setHiddenServices = async (
     hiddenServices: normalizedHiddenServices,
     visibleServiceOptions,
   };
+};
+
+/**
+ * 读取 Popup 翻译历史，并在发现旧数据不符合约束时自动修正存储，
+ * 避免 UI 侧为脏数据重复兜底。
+ */
+export const getTranslationHistory = async (): Promise<TranslationHistoryItem[]> => {
+  const result = await browser.storage.local.get([TRANSLATION_HISTORY_STORAGE_KEY]);
+  const normalizedHistory = normalizeTranslationHistory(result[TRANSLATION_HISTORY_STORAGE_KEY]);
+
+  if (
+    !Array.isArray(result[TRANSLATION_HISTORY_STORAGE_KEY]) ||
+    result[TRANSLATION_HISTORY_STORAGE_KEY].length !== normalizedHistory.length ||
+    result[TRANSLATION_HISTORY_STORAGE_KEY].some?.(
+      (item: unknown, index: number) => item !== normalizedHistory[index],
+    )
+  ) {
+    await browser.storage.local.set({ [TRANSLATION_HISTORY_STORAGE_KEY]: normalizedHistory });
+  }
+
+  return normalizedHistory;
+};
+
+/**
+ * 新历史写入头部；若文本已存在则提升到第一位，并保持最多五条。
+ */
+export const addTranslationHistoryItem = async (
+  text: string,
+): Promise<TranslationHistoryItem[]> => {
+  const normalizedText = text.trim();
+  if (!normalizedText) {
+    return getTranslationHistory();
+  }
+
+  const currentHistory = await getTranslationHistory();
+  const nextHistory = [normalizedText, ...currentHistory.filter((item) => item !== normalizedText)]
+    .slice(0, MAX_TRANSLATION_HISTORY_ITEMS);
+
+  await browser.storage.local.set({ [TRANSLATION_HISTORY_STORAGE_KEY]: nextHistory });
+  return nextHistory;
 };
 
 export const detectDirection = (text: string): TranslationDirection => {

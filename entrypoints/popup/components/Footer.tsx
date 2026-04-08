@@ -1,4 +1,4 @@
-import { GithubIcon } from '../../components/icons'
+import { GithubIcon } from "../../components/icons";
 
 export const Footer = () => {
   return (
@@ -6,7 +6,7 @@ export const Footer = () => {
       <p className="text-[10px] opacity-60">
         V{__APP_VERSION__} &copy; {new Date().getFullYear()}
         <a href="https://translate-extension.tingyuan.in" target="_blank" className="ml-1 link">
-          Translate Extension
+          fanslate
         </a>
       </p>
       <a
@@ -19,5 +19,5 @@ export const Footer = () => {
         <GithubIcon className="h-3.5 w-3.5" />
       </a>
     </footer>
-  )
-}
+  );
+};

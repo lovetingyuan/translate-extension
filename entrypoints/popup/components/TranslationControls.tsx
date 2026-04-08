@@ -32,8 +32,7 @@ export const TranslationControls = ({
   onServiceToggle,
   onServiceMenuClose,
 }: TranslationControlsProps) => {
-  const isTranslateDisabled =
-    isLoading || !inputText.trim() || selectedServices.length === 0;
+  const isTranslateDisabled = isLoading || !inputText.trim() || selectedServices.length === 0;
 
   return (
     <div className="space-y-2">

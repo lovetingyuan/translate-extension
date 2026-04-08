@@ -109,12 +109,7 @@ function runCommandForOutput(command, args = []) {
  * @returns {boolean}
  */
 function hasTrackedChanges() {
-  const workingTree = runCommandForOutput("git", [
-    "diff",
-    "--quiet",
-    "--ignore-submodules",
-    "--",
-  ]);
+  const workingTree = runCommandForOutput("git", ["diff", "--quiet", "--ignore-submodules", "--"]);
   if ((workingTree.status ?? 1) > 1) {
     throw new Error("Failed to inspect working tree changes.");
   }
@@ -243,7 +238,9 @@ async function main() {
   }
 
   if (branch.stdout === "HEAD") {
-    throw new Error("Detached HEAD is not supported for releases. Please switch to a branch first.");
+    throw new Error(
+      "Detached HEAD is not supported for releases. Please switch to a branch first.",
+    );
   }
 
   const repositoryUrl = getGitHubRepositoryUrl();

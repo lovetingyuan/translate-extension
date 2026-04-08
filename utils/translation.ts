@@ -793,8 +793,10 @@ export const addTranslationHistoryItem = async (
   }
 
   const currentHistory = await getTranslationHistory();
-  const nextHistory = [normalizedText, ...currentHistory.filter((item) => item !== normalizedText)]
-    .slice(0, MAX_TRANSLATION_HISTORY_ITEMS);
+  const nextHistory = [
+    normalizedText,
+    ...currentHistory.filter((item) => item !== normalizedText),
+  ].slice(0, MAX_TRANSLATION_HISTORY_ITEMS);
 
   await browser.storage.local.set({ [TRANSLATION_HISTORY_STORAGE_KEY]: nextHistory });
   return nextHistory;

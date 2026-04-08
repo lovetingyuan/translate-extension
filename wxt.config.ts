@@ -16,7 +16,7 @@ export default defineConfig({
     startUrls: ["https://tingyuan.in"],
   },
   manifest: {
-    name: "中英直译",
+    name: "fanslate",
     description:
       "A browser extension for bidirectional Chinese-English translation via context menus.",
     permissions: ["contextMenus", "storage"],

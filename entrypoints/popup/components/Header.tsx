@@ -10,8 +10,8 @@ export const Header = ({ theme, onToggleTheme, onOpenSettings }: HeaderProps) =>
   return (
     <div className="flex items-center justify-between px-4 pb-3 pt-4 shrink-0">
       <div className="flex items-center gap-2">
-        <img src="/icon/32.png" alt="中英直译助手 logo" className="h-6 w-6 rounded-md shadow-sm" />
-        <span className="text-base font-semibold opacity-80">中英直译助手</span>
+        <img src="/icon/32.png" alt="fanslate logo" className="h-6 w-6 rounded-md shadow-sm" />
+        <span className="text-base font-semibold opacity-80">fanslate</span>
       </div>
       <div className="flex gap-1">
         <button

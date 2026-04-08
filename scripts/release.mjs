@@ -277,9 +277,10 @@ async function main() {
     runCommand("git", ["push", "origin", branch.stdout]);
     runCommand("git", ["push", "origin", tagName]);
 
+    const releaseTitle = version;
     const releaseUrl =
       `${repositoryUrl}/releases/new?tag=${encodeURIComponent(tagName)}` +
-      `&title=${encodeURIComponent(tagName)}` +
+      `&title=${encodeURIComponent(releaseTitle)}` +
       `&body=${encodeURIComponent(releaseNotes)}`;
 
     console.log("==> Opening GitHub Release page");

@@ -1,36 +1,36 @@
-import { getApiKey } from "./keyResolver";
-import { logger } from "./logger";
+import { getApiKey } from './keyResolver'
+import { logger } from './logger'
 
 export const TRANSLATION_SERVICE_IDS = [
-  "google",
-  "microsoft",
-  "tencent",
-  "deepl",
-  "openrouter",
-] as const;
+  'google',
+  'microsoft',
+  'tencent',
+  'deepl',
+  'openrouter',
+] as const
 
-export type TranslationServiceId = (typeof TRANSLATION_SERVICE_IDS)[number];
-export type TranslationDirection = "zh" | "en";
-export type TranslationResultStatus = "success" | "error";
-export type TranslationHistoryItem = string;
+export type TranslationServiceId = (typeof TRANSLATION_SERVICE_IDS)[number]
+export type TranslationDirection = 'zh' | 'en'
+export type TranslationResultStatus = 'success' | 'error'
+export type TranslationHistoryItem = string
 
 export interface TranslationServiceOption {
-  id: TranslationServiceId;
-  label: string;
+  id: TranslationServiceId
+  label: string
 }
 
 export interface TranslationResultItem {
-  service: TranslationServiceId;
-  serviceLabel: string;
-  status: TranslationResultStatus;
-  translation: string;
-  error: string;
-  direction: TranslationDirection;
+  service: TranslationServiceId
+  serviceLabel: string
+  status: TranslationResultStatus
+  translation: string
+  error: string
+  direction: TranslationDirection
 }
 
 export interface TranslationBatchResult {
-  results: TranslationResultItem[];
-  direction: TranslationDirection;
+  results: TranslationResultItem[]
+  direction: TranslationDirection
 }
 
 /**
@@ -39,30 +39,30 @@ export interface TranslationBatchResult {
  */
 export type TranslationResultsByService = Partial<
   Record<TranslationServiceId, TranslationResultItem>
->;
+>
 
 export interface TranslateWithServicesOptions {
-  signal?: AbortSignal;
+  signal?: AbortSignal
 }
 
 interface OpenRouterMessage {
-  content?: string;
+  content?: string
 }
 
 interface OpenRouterChoice {
-  message?: OpenRouterMessage;
+  message?: OpenRouterMessage
 }
 
 interface OpenRouterResponse {
-  choices?: OpenRouterChoice[];
+  choices?: OpenRouterChoice[]
 }
 
 interface MicrosoftTranslation {
-  text?: string;
+  text?: string
 }
 
 interface MicrosoftTranslationResponseItem {
-  translations?: MicrosoftTranslation[];
+  translations?: MicrosoftTranslation[]
 }
 
 /**
@@ -70,11 +70,11 @@ interface MicrosoftTranslationResponseItem {
  * API payloads surface as explicit provider errors instead of silent failures.
  */
 interface DeepLTranslation {
-  text?: string;
+  text?: string
 }
 
 interface DeepLTranslationResponse {
-  translations?: DeepLTranslation[];
+  translations?: DeepLTranslation[]
 }
 
 /**
@@ -82,59 +82,59 @@ interface DeepLTranslationResponse {
  * content-script UIs can stay consistent after migrations or settings changes.
  */
 export interface TranslationServicePreferences {
-  selectedServices: TranslationServiceId[];
-  hiddenServices: TranslationServiceId[];
-  visibleServiceOptions: TranslationServiceOption[];
+  selectedServices: TranslationServiceId[]
+  hiddenServices: TranslationServiceId[]
+  visibleServiceOptions: TranslationServiceOption[]
 }
 
 type TranslatorFunction = (
   text: string,
   targetLang: TranslationDirection,
   signal?: AbortSignal,
-) => Promise<string>;
+) => Promise<string>
 
-const DEFAULT_SELECTED_SERVICES: TranslationServiceId[] = ["google"];
-const DEFAULT_HIDDEN_SERVICES: TranslationServiceId[] = ["tencent"];
-const EXPIRATION_BUFFER_MS = 1000;
-const SELECTED_SERVICES_STORAGE_KEY = "selectedServices";
-const LEGACY_SELECTED_SERVICE_STORAGE_KEY = "selectedService";
-const HIDDEN_SERVICES_STORAGE_KEY = "hiddenServices";
-const TRANSLATION_HISTORY_STORAGE_KEY = "translationHistory";
-const MAX_TRANSLATION_HISTORY_ITEMS = 5;
+const DEFAULT_SELECTED_SERVICES: TranslationServiceId[] = ['google']
+const DEFAULT_HIDDEN_SERVICES: TranslationServiceId[] = ['tencent']
+const EXPIRATION_BUFFER_MS = 1000
+const SELECTED_SERVICES_STORAGE_KEY = 'selectedServices'
+const LEGACY_SELECTED_SERVICE_STORAGE_KEY = 'selectedService'
+const HIDDEN_SERVICES_STORAGE_KEY = 'hiddenServices'
+const TRANSLATION_HISTORY_STORAGE_KEY = 'translationHistory'
+const MAX_TRANSLATION_HISTORY_ITEMS = 5
 
 export const TRANSLATION_SERVICE_OPTIONS: TranslationServiceOption[] = [
-  { id: "google", label: "Google" },
-  { id: "microsoft", label: "Microsoft" },
-  { id: "tencent", label: "腾讯翻译" },
-  { id: "deepl", label: "DeepL" },
-  { id: "openrouter", label: "OpenRouter" },
-];
+  { id: 'google', label: 'Google' },
+  { id: 'microsoft', label: 'Microsoft' },
+  { id: 'tencent', label: '腾讯翻译' },
+  { id: 'deepl', label: 'DeepL' },
+  { id: 'openrouter', label: 'OpenRouter' },
+]
 
 const TRANSLATION_SERVICE_LABELS: Record<TranslationServiceId, string> = {
-  google: "Google",
-  microsoft: "Microsoft",
-  tencent: "腾讯翻译",
-  deepl: "DeepL",
-  openrouter: "OpenRouter",
-};
+  google: 'Google',
+  microsoft: 'Microsoft',
+  tencent: '腾讯翻译',
+  deepl: 'DeepL',
+  openrouter: 'OpenRouter',
+}
 
-let msTokenCache: { token: string; expiresAt: number } | null = null;
+let msTokenCache: { token: string; expiresAt: number } | null = null
 
 export const isTranslationServiceId = (value: unknown): value is TranslationServiceId =>
-  typeof value === "string" && TRANSLATION_SERVICE_IDS.includes(value as TranslationServiceId);
+  typeof value === 'string' && TRANSLATION_SERVICE_IDS.includes(value as TranslationServiceId)
 
 const normalizeServiceIds = (value: unknown): TranslationServiceId[] => {
   if (!Array.isArray(value)) {
-    return [];
+    return []
   }
 
   return value.reduce<TranslationServiceId[]>((services, item) => {
     if (isTranslationServiceId(item) && !services.includes(item)) {
-      services.push(item);
+      services.push(item)
     }
-    return services;
-  }, []);
-};
+    return services
+  }, [])
+}
 
 /**
  * Popup 历史记录只保存原文字符串，因此在写入前统一做 trim、去空、去重和数量裁剪，
@@ -142,368 +142,368 @@ const normalizeServiceIds = (value: unknown): TranslationServiceId[] => {
  */
 const normalizeTranslationHistory = (value: unknown): TranslationHistoryItem[] => {
   if (!Array.isArray(value)) {
-    return [];
+    return []
   }
 
-  const items: TranslationHistoryItem[] = [];
+  const items: TranslationHistoryItem[] = []
   for (const item of value) {
-    if (typeof item !== "string") {
-      continue;
+    if (typeof item !== 'string') {
+      continue
     }
 
-    const normalizedItem = item.trim();
+    const normalizedItem = item.trim()
     if (!normalizedItem || items.includes(normalizedItem)) {
-      continue;
+      continue
     }
 
-    items.push(normalizedItem);
+    items.push(normalizedItem)
 
     if (items.length >= MAX_TRANSLATION_HISTORY_ITEMS) {
-      break;
+      break
     }
   }
 
-  return items;
-};
+  return items
+}
 
 const areSameServiceLists = (
   left: TranslationServiceId[],
   right: TranslationServiceId[],
 ): boolean =>
-  left.length === right.length && left.every((service, index) => service === right[index]);
+  left.length === right.length && left.every((service, index) => service === right[index])
 
 const getVisibleServiceIds = (hiddenServices: TranslationServiceId[]): TranslationServiceId[] => {
-  return TRANSLATION_SERVICE_IDS.filter((service) => !hiddenServices.includes(service));
-};
+  return TRANSLATION_SERVICE_IDS.filter(service => !hiddenServices.includes(service))
+}
 
 const filterHiddenServices = (
   services: TranslationServiceId[],
   hiddenServices: TranslationServiceId[],
 ): TranslationServiceId[] => {
-  return services.filter((service) => !hiddenServices.includes(service));
-};
+  return services.filter(service => !hiddenServices.includes(service))
+}
 
 const resolveFallbackSelectedServices = (
   hiddenServices: TranslationServiceId[],
 ): TranslationServiceId[] => {
-  const visibleDefaultServices = filterHiddenServices(DEFAULT_SELECTED_SERVICES, hiddenServices);
+  const visibleDefaultServices = filterHiddenServices(DEFAULT_SELECTED_SERVICES, hiddenServices)
   if (visibleDefaultServices.length > 0) {
-    return visibleDefaultServices;
+    return visibleDefaultServices
   }
 
-  const firstVisibleService = getVisibleServiceIds(hiddenServices)[0];
-  return firstVisibleService ? [firstVisibleService] : [];
-};
+  const firstVisibleService = getVisibleServiceIds(hiddenServices)[0]
+  return firstVisibleService ? [firstVisibleService] : []
+}
 
 const normalizeSelectedServices = (
   value: unknown,
   hiddenServices: TranslationServiceId[],
 ): TranslationServiceId[] => {
-  const visibleSelectedServices = filterHiddenServices(normalizeServiceIds(value), hiddenServices);
+  const visibleSelectedServices = filterHiddenServices(normalizeServiceIds(value), hiddenServices)
   return visibleSelectedServices.length > 0
     ? visibleSelectedServices
-    : resolveFallbackSelectedServices(hiddenServices);
-};
+    : resolveFallbackSelectedServices(hiddenServices)
+}
 
 const normalizeHiddenServices = (value: unknown): TranslationServiceId[] => {
-  return normalizeServiceIds(value);
-};
+  return normalizeServiceIds(value)
+}
 
 export const getVisibleTranslationServiceOptions = (
   hiddenServices: TranslationServiceId[],
 ): TranslationServiceOption[] => {
-  return TRANSLATION_SERVICE_OPTIONS.filter((option) => !hiddenServices.includes(option.id));
-};
+  return TRANSLATION_SERVICE_OPTIONS.filter(option => !hiddenServices.includes(option.id))
+}
 
 const loadServicePreferencesFromStorage = async (): Promise<TranslationServicePreferences> => {
   const result = await browser.storage.local.get([
     SELECTED_SERVICES_STORAGE_KEY,
     LEGACY_SELECTED_SERVICE_STORAGE_KEY,
     HIDDEN_SERVICES_STORAGE_KEY,
-  ]);
+  ])
 
-  const hasStoredHiddenServices = HIDDEN_SERVICES_STORAGE_KEY in result;
+  const hasStoredHiddenServices = HIDDEN_SERVICES_STORAGE_KEY in result
   const hiddenServices = hasStoredHiddenServices
     ? normalizeHiddenServices(result.hiddenServices)
-    : DEFAULT_HIDDEN_SERVICES;
+    : DEFAULT_HIDDEN_SERVICES
 
   const storedSelectedServices =
     SELECTED_SERVICES_STORAGE_KEY in result
       ? result.selectedServices
-      : [result[LEGACY_SELECTED_SERVICE_STORAGE_KEY]];
+      : [result[LEGACY_SELECTED_SERVICE_STORAGE_KEY]]
 
-  const selectedServices = normalizeSelectedServices(storedSelectedServices, hiddenServices);
-  const visibleServiceOptions = getVisibleTranslationServiceOptions(hiddenServices);
+  const selectedServices = normalizeSelectedServices(storedSelectedServices, hiddenServices)
+  const visibleServiceOptions = getVisibleTranslationServiceOptions(hiddenServices)
 
-  const storageUpdates: Record<string, TranslationServiceId[]> = {};
+  const storageUpdates: Record<string, TranslationServiceId[]> = {}
   if (
     !hasStoredHiddenServices ||
     !areSameServiceLists(hiddenServices, normalizeHiddenServices(result.hiddenServices))
   ) {
-    storageUpdates[HIDDEN_SERVICES_STORAGE_KEY] = hiddenServices;
+    storageUpdates[HIDDEN_SERVICES_STORAGE_KEY] = hiddenServices
   }
 
   if (
     !(SELECTED_SERVICES_STORAGE_KEY in result) ||
     !areSameServiceLists(selectedServices, normalizeServiceIds(result.selectedServices))
   ) {
-    storageUpdates[SELECTED_SERVICES_STORAGE_KEY] = selectedServices;
+    storageUpdates[SELECTED_SERVICES_STORAGE_KEY] = selectedServices
   }
 
   if (Object.keys(storageUpdates).length > 0) {
-    await browser.storage.local.set(storageUpdates);
+    await browser.storage.local.set(storageUpdates)
   }
 
   if (LEGACY_SELECTED_SERVICE_STORAGE_KEY in result) {
-    await browser.storage.local.remove(LEGACY_SELECTED_SERVICE_STORAGE_KEY);
+    await browser.storage.local.remove(LEGACY_SELECTED_SERVICE_STORAGE_KEY)
   }
 
   return {
     selectedServices,
     hiddenServices,
     visibleServiceOptions,
-  };
-};
+  }
+}
 
 const createAbortError = (): DOMException => {
-  return new DOMException("Translation aborted", "AbortError");
-};
+  return new DOMException('Translation aborted', 'AbortError')
+}
 
 export const buildTranslationSessionKey = (text: string, direction: TranslationDirection): string =>
-  `${direction}::${text}`;
+  `${direction}::${text}`
 
 /**
  * Centralizes abort detection because browser messaging and fetch can surface
  * slightly different error shapes when a translation batch is cancelled.
  */
 export const isAbortError = (error: unknown): boolean => {
-  if (error instanceof DOMException && error.name === "AbortError") {
-    return true;
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return true
   }
 
   if (error instanceof Error) {
-    const message = error.message.toLowerCase();
+    const message = error.message.toLowerCase()
     return (
-      error.name === "AbortError" ||
-      message.includes("aborterror") ||
-      message.includes("aborted") ||
-      message.includes("signal is aborted")
-    );
+      error.name === 'AbortError' ||
+      message.includes('aborterror') ||
+      message.includes('aborted') ||
+      message.includes('signal is aborted')
+    )
   }
 
-  return false;
-};
+  return false
+}
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (error instanceof Error && error.message.trim()) {
-    return error.message;
+    return error.message
   }
 
-  return fallback;
-};
+  return fallback
+}
 
 const parseMSToken = (token: string): number => {
   try {
-    const payload = token.split(".")[1];
-    const decoded = JSON.parse(atob(payload)) as { exp?: number };
-    return decoded.exp ?? 0;
+    const payload = token.split('.')[1]
+    const decoded = JSON.parse(atob(payload)) as { exp?: number }
+    return decoded.exp ?? 0
   } catch (err) {
-    logger.error("parseMSToken error:", err);
-    return 0;
+    logger.error('parseMSToken error:', err)
+    return 0
   }
-};
+}
 
 const getMicrosoftToken = async (): Promise<string> => {
-  const now = Date.now();
+  const now = Date.now()
 
   if (msTokenCache && msTokenCache.expiresAt > now + EXPIRATION_BUFFER_MS) {
-    logger.log("使用缓存的Microsoft token");
-    return msTokenCache.token;
+    logger.log('使用缓存的Microsoft token')
+    return msTokenCache.token
   }
 
-  const storageResult = await browser.storage.local.get("msAuthToken");
-  const storageToken = storageResult.msAuthToken as string | undefined;
+  const storageResult = await browser.storage.local.get('msAuthToken')
+  const storageToken = storageResult.msAuthToken as string | undefined
 
   if (storageToken) {
-    const storageExp = parseMSToken(storageToken);
-    const storageExpiresAt = storageExp * 1000;
+    const storageExp = parseMSToken(storageToken)
+    const storageExpiresAt = storageExp * 1000
 
     if (storageExpiresAt > now + EXPIRATION_BUFFER_MS) {
-      logger.log("使用storage缓存的Microsoft token");
-      msTokenCache = { token: storageToken, expiresAt: storageExpiresAt };
-      return storageToken;
+      logger.log('使用storage缓存的Microsoft token')
+      msTokenCache = { token: storageToken, expiresAt: storageExpiresAt }
+      return storageToken
     }
   }
 
-  logger.log("获取新的Microsoft token");
-  const response = await fetch("https://edge.microsoft.com/translate/auth");
+  logger.log('获取新的Microsoft token')
+  const response = await fetch('https://edge.microsoft.com/translate/auth')
 
   if (!response.ok) {
-    throw new Error(`Microsoft token请求失败: ${response.status}`);
+    throw new Error(`Microsoft token请求失败: ${response.status}`)
   }
 
-  const token = await response.text();
-  const exp = parseMSToken(token);
-  const expiresAt = exp * 1000;
+  const token = await response.text()
+  const exp = parseMSToken(token)
+  const expiresAt = exp * 1000
 
-  await browser.storage.local.set({ msAuthToken: token });
-  msTokenCache = { token, expiresAt };
+  await browser.storage.local.set({ msAuthToken: token })
+  msTokenCache = { token, expiresAt }
 
-  logger.log("Microsoft token获取成功，过期时间:", new Date(expiresAt));
-  return token;
-};
+  logger.log('Microsoft token获取成功，过期时间:', new Date(expiresAt))
+  return token
+}
 
 const translateWithGoogle = async (
   text: string,
   targetLang: TranslationDirection,
   signal?: AbortSignal,
 ): Promise<string> => {
-  const url = "https://translate-pa.googleapis.com/v1/translateHtml";
+  const url = 'https://translate-pa.googleapis.com/v1/translateHtml'
 
-  logger.log("正在请求Google翻译API:", url);
+  logger.log('正在请求Google翻译API:', url)
 
-  const apiKey = import.meta.env?.WXT_GOOGLE_HTML_API_KEY || getApiKey();
+  const apiKey = import.meta.env?.WXT_GOOGLE_HTML_API_KEY || getApiKey()
 
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json+protobuf",
-      "X-Goog-API-Key": apiKey,
-      "user-agent": navigator.userAgent,
-      accept: "*/*",
-      "accept-encoding": "gzip, deflate, br",
-      "accept-language": "en,zh-CN;q=0.9,zh;q=0.8,ja;q=0.7,en-US;q=0.6",
+      'Content-Type': 'application/json+protobuf',
+      'X-Goog-API-Key': apiKey,
+      'user-agent': navigator.userAgent,
+      accept: '*/*',
+      'accept-encoding': 'gzip, deflate, br',
+      'accept-language': 'en,zh-CN;q=0.9,zh;q=0.8,ja;q=0.7,en-US;q=0.6',
     },
-    body: JSON.stringify([[[text], "auto", targetLang], "wt_lib"]),
+    body: JSON.stringify([[[text], 'auto', targetLang], 'wt_lib']),
     signal,
-  });
+  })
 
-  logger.log("GoogleHtml翻译API响应状态:", response.status, response.statusText);
+  logger.log('GoogleHtml翻译API响应状态:', response.status, response.statusText)
 
   if (!response.ok) {
-    throw new Error(`GoogleHtml翻译请求失败: ${response.status}`);
+    throw new Error(`GoogleHtml翻译请求失败: ${response.status}`)
   }
 
-  const data = (await response.json()) as unknown;
-  logger.log("GoogleHtml翻译API返回数据:", JSON.stringify(data, null, 2));
+  const data = (await response.json()) as unknown
+  logger.log('GoogleHtml翻译API返回数据:', JSON.stringify(data, null, 2))
 
   if (Array.isArray(data) && data.length > 0) {
-    const firstItem = data[0];
+    const firstItem = data[0]
 
-    if (typeof firstItem === "number") {
-      const message = typeof data[1] === "string" ? data[1] : "未知错误";
-      throw new Error(`GoogleHtml翻译API错误 (${firstItem}): ${message}`);
+    if (typeof firstItem === 'number') {
+      const message = typeof data[1] === 'string' ? data[1] : '未知错误'
+      throw new Error(`GoogleHtml翻译API错误 (${firstItem}): ${message}`)
     }
 
-    if (Array.isArray(firstItem) && firstItem.length > 0 && typeof firstItem[0] === "string") {
-      return firstItem[0];
+    if (Array.isArray(firstItem) && firstItem.length > 0 && typeof firstItem[0] === 'string') {
+      return firstItem[0]
     }
 
-    if (typeof firstItem === "string") {
-      return firstItem;
+    if (typeof firstItem === 'string') {
+      return firstItem
     }
   }
 
-  throw new Error("GoogleHtml翻译返回数据格式错误");
-};
+  throw new Error('GoogleHtml翻译返回数据格式错误')
+}
 
 const translateWithMicrosoft = async (
   text: string,
   targetLang: TranslationDirection,
   signal?: AbortSignal,
 ): Promise<string> => {
-  const toLang = targetLang === "zh" ? "zh-Hans" : "en";
-  const url = `https://api-edge.cognitive.microsofttranslator.com/translate?api-version=3.0&from=&to=${toLang}`;
+  const toLang = targetLang === 'zh' ? 'zh-Hans' : 'en'
+  const url = `https://api-edge.cognitive.microsofttranslator.com/translate?api-version=3.0&from=&to=${toLang}`
 
-  logger.log("正在请求Microsoft翻译API:", url);
+  logger.log('正在请求Microsoft翻译API:', url)
 
-  const token = await getMicrosoftToken();
+  const token = await getMicrosoftToken()
 
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      accept: "*/*",
-      "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+      accept: '*/*',
+      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
       authorization: `Bearer ${token}`,
-      "cache-control": "no-cache",
-      "content-type": "application/json",
-      pragma: "no-cache",
+      'cache-control': 'no-cache',
+      'content-type': 'application/json',
+      pragma: 'no-cache',
     },
     body: JSON.stringify([{ Text: text }]),
     signal,
-  });
+  })
 
-  logger.log("Microsoft翻译API响应状态:", response.status, response.statusText);
+  logger.log('Microsoft翻译API响应状态:', response.status, response.statusText)
 
   if (!response.ok) {
-    const errorText = await response.text();
-    logger.error("Microsoft翻译API错误响应:", errorText);
-    throw new Error(`Microsoft翻译请求失败: ${response.status}`);
+    const errorText = await response.text()
+    logger.error('Microsoft翻译API错误响应:', errorText)
+    throw new Error(`Microsoft翻译请求失败: ${response.status}`)
   }
 
-  const data = (await response.json()) as MicrosoftTranslationResponseItem[];
-  logger.log("Microsoft翻译API返回数据:", data);
+  const data = (await response.json()) as MicrosoftTranslationResponseItem[]
+  logger.log('Microsoft翻译API返回数据:', data)
 
-  const translation = data[0]?.translations?.[0]?.text;
-  if (typeof translation === "string") {
-    return translation;
+  const translation = data[0]?.translations?.[0]?.text
+  if (typeof translation === 'string') {
+    return translation
   }
 
-  throw new Error("Microsoft翻译返回数据格式错误");
-};
+  throw new Error('Microsoft翻译返回数据格式错误')
+}
 
 const translateWithTencent = async (
   text: string,
   targetLang: TranslationDirection,
   signal?: AbortSignal,
 ): Promise<string> => {
-  const url = "https://transmart.qq.com/api/imt";
+  const url = 'https://transmart.qq.com/api/imt'
 
-  logger.log("正在请求Tencent翻译API:", url);
+  logger.log('正在请求Tencent翻译API:', url)
 
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
-      "User-Agent": navigator.userAgent,
-      Referer: "https://transmart.qq.com/zh-CN/index",
+      'Content-Type': 'application/json',
+      'User-Agent': navigator.userAgent,
+      Referer: 'https://transmart.qq.com/zh-CN/index',
     },
     body: JSON.stringify({
       header: {
-        fn: "auto_translation",
+        fn: 'auto_translation',
         client_key:
-          "browser-chrome-110.0.0-Mac OS-df4bd4c5-a65d-44b2-a40f-42f34f3535f2-1677486696487",
+          'browser-chrome-110.0.0-Mac OS-df4bd4c5-a65d-44b2-a40f-42f34f3535f2-1677486696487',
       },
-      type: "plain",
-      model_category: "normal",
+      type: 'plain',
+      model_category: 'normal',
       source: {
         text_list: [text],
-        lang: "auto",
+        lang: 'auto',
       },
       target: {
         lang: targetLang,
       },
     }),
     signal,
-  });
+  })
 
-  logger.log("Tencent翻译API响应状态:", response.status, response.statusText);
+  logger.log('Tencent翻译API响应状态:', response.status, response.statusText)
 
   if (!response.ok) {
-    const errorText = await response.text();
-    logger.error("Tencent翻译API错误响应:", errorText);
-    throw new Error(`Tencent翻译请求失败: ${response.status}`);
+    const errorText = await response.text()
+    logger.error('Tencent翻译API错误响应:', errorText)
+    throw new Error(`Tencent翻译请求失败: ${response.status}`)
   }
 
-  const data = (await response.json()) as { auto_translation?: unknown };
-  logger.log("Tencent翻译API返回数据:", data);
+  const data = (await response.json()) as { auto_translation?: unknown }
+  logger.log('Tencent翻译API返回数据:', data)
 
-  if (Array.isArray(data.auto_translation) && typeof data.auto_translation[0] === "string") {
-    return data.auto_translation[0];
+  if (Array.isArray(data.auto_translation) && typeof data.auto_translation[0] === 'string') {
+    return data.auto_translation[0]
   }
 
-  throw new Error("Tencent翻译返回数据格式错误");
-};
+  throw new Error('Tencent翻译返回数据格式错误')
+}
 
 /**
  * DeepL requires a user-provided API key stored in extension settings, so the
@@ -514,119 +514,113 @@ const translateWithDeepL = async (
   targetLang: TranslationDirection,
   signal?: AbortSignal,
 ): Promise<string> => {
-  const settings = await browser.storage.local.get(["deeplApiKey"]);
-  const apiKey = settings.deeplApiKey as string | undefined;
+  const settings = await browser.storage.local.get(['deeplApiKey'])
+  const apiKey = settings.deeplApiKey as string | undefined
 
   if (!apiKey) {
-    throw new Error("DeepL API Key 未配置，请先在设置中填写");
+    throw new Error('DeepL API Key 未配置，请先在设置中填写')
   }
 
-  const deeplTargetLang = targetLang === "zh" ? "ZH" : "EN";
-  const url = "https://api-free.deepl.com/v2/translate";
+  const deeplTargetLang = targetLang === 'zh' ? 'ZH' : 'EN'
+  const url = 'https://api-free.deepl.com/v2/translate'
 
-  logger.log("正在请求DeepL翻译API:", url, "Target:", deeplTargetLang);
+  logger.log('正在请求DeepL翻译API:', url, 'Target:', deeplTargetLang)
 
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `DeepL-Auth-Key ${apiKey}`,
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       text: [text],
       target_lang: deeplTargetLang,
     }),
     signal,
-  });
+  })
 
-  logger.log("DeepL翻译API响应状态:", response.status, response.statusText);
+  logger.log('DeepL翻译API响应状态:', response.status, response.statusText)
 
   if (!response.ok) {
-    const errorText = await response.text();
-    logger.error("DeepL翻译API错误响应:", errorText);
-    throw new Error(`DeepL请求失败: ${response.status}`);
+    const errorText = await response.text()
+    logger.error('DeepL翻译API错误响应:', errorText)
+    throw new Error(`DeepL请求失败: ${response.status}`)
   }
 
-  const data = (await response.json()) as DeepLTranslationResponse;
-  logger.log("DeepL翻译API返回数据:", data);
+  const data = (await response.json()) as DeepLTranslationResponse
+  logger.log('DeepL翻译API返回数据:', data)
 
-  const translation = data.translations?.[0]?.text;
-  if (typeof translation === "string") {
-    return translation;
+  const translation = data.translations?.[0]?.text
+  if (typeof translation === 'string') {
+    return translation
   }
 
-  throw new Error("DeepL翻译返回数据格式错误");
-};
+  throw new Error('DeepL翻译返回数据格式错误')
+}
 
 const translateWithOpenRouter = async (
   text: string,
   targetLang: TranslationDirection,
   signal?: AbortSignal,
 ): Promise<string> => {
-  const settings = await browser.storage.local.get(["openRouterApiKey", "openRouterModelId"]);
-  const userApiKey = settings.openRouterApiKey as string | undefined;
-  const userModelId = settings.openRouterModelId as string | undefined;
-
-  const envApiKey = import.meta.env?.WXT_OPENROUTER_API_KEY;
-  const envModelId = import.meta.env?.WXT_OPENROUTER_MODEL;
-
-  const apiKey = userApiKey || envApiKey;
-  const model = userModelId || envModelId || "openrouter/free";
+  const settings = await browser.storage.local.get(['openRouterApiKey', 'openRouterModelId'])
+  const apiKey = settings.openRouterApiKey as string | undefined
+  const model = (settings.openRouterModelId as string | undefined) || 'openrouter/free'
 
   if (!apiKey) {
-    throw new Error("OpenRouter API Key 未配置 (请在设置中配置或检查环境变量)");
+    throw new Error('OpenRouter API Key 未配置，请点击右上角设置')
   }
 
-  const url = "https://openrouter.ai/api/v1/chat/completions";
-  const languageName = targetLang === "zh" ? "Chinese" : "English";
+  const url = 'https://openrouter.ai/api/v1/chat/completions'
+  const languageName = targetLang === 'zh' ? 'Chinese' : 'English'
   const systemPrompt = `Translate the content within <source_text> tags into ${languageName}.
 Rules:
 1. Ensure the translation is natural, fluent, and uses common native expressions.
 2. Output ONLY the translation. No any extra content.
-3. Try to preserve original formatting.`;
+3. Try to preserve original formatting.`
 
-  logger.log("正在请求OpenRouter翻译API:", url, "Model:", model);
+  logger.log('正在请求OpenRouter翻译API:', url, 'Model:', model)
 
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://github.com/wxt-dev/wxt",
-      "X-Title": "Translation Extension",
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://github.com/wxt-dev/wxt',
+      'X-Title': 'Translation Extension',
     },
     body: JSON.stringify({
       model,
       temperature: 0.1,
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: 'system', content: systemPrompt },
         {
-          role: "user",
+          role: 'user',
           content: `Translate the content inside <source_text> to ${languageName}:\n<source_text>\n${text}\n</source_text>`,
         },
       ],
     }),
     signal,
-  });
+  })
 
-  logger.log("OpenRouter API响应状态:", response.status, response.statusText);
+  logger.log('OpenRouter API响应状态:', response.status, response.statusText)
 
   if (!response.ok) {
-    const errorText = await response.text();
-    logger.error("OpenRouter API错误响应:", errorText);
-    throw new Error(`OpenRouter请求失败: ${response.status}`);
+    const errorText = await response.text()
+    logger.error('OpenRouter API错误响应:', errorText)
+    throw new Error(`OpenRouter请求失败: ${response.status}`)
   }
 
-  const data = (await response.json()) as OpenRouterResponse;
-  logger.log("OpenRouter API返回数据:", data);
+  const data = (await response.json()) as OpenRouterResponse
+  logger.log('OpenRouter API返回数据:', data)
 
-  const content = data.choices?.[0]?.message?.content;
-  if (typeof content === "string") {
-    return content;
+  const content = data.choices?.[0]?.message?.content
+  if (typeof content === 'string') {
+    return content
   }
 
-  throw new Error("OpenRouter翻译返回数据格式错误");
-};
+  throw new Error('OpenRouter翻译返回数据格式错误')
+}
 
 const translatorMap: Record<TranslationServiceId, TranslatorFunction> = {
   google: translateWithGoogle,
@@ -634,20 +628,20 @@ const translatorMap: Record<TranslationServiceId, TranslatorFunction> = {
   tencent: translateWithTencent,
   deepl: translateWithDeepL,
   openrouter: translateWithOpenRouter,
-};
+}
 
 export const getServiceLabel = (service: TranslationServiceId): string => {
-  return TRANSLATION_SERVICE_LABELS[service];
-};
+  return TRANSLATION_SERVICE_LABELS[service]
+}
 
 export const mapResultsByService = (
   results: TranslationResultItem[],
 ): TranslationResultsByService => {
   return results.reduce<TranslationResultsByService>((accumulator, result) => {
-    accumulator[result.service] = result;
-    return accumulator;
-  }, {});
-};
+    accumulator[result.service] = result
+    return accumulator
+  }, {})
+}
 
 /**
  * Preserves the user's selected provider order so restored cached cards and new
@@ -657,11 +651,11 @@ export const orderResultsByServices = (
   resultsByService: TranslationResultsByService,
   services: TranslationServiceId[],
 ): TranslationResultItem[] => {
-  return services.flatMap((service) => {
-    const result = resultsByService[service];
-    return result ? [result] : [];
-  });
-};
+  return services.flatMap(service => {
+    const result = resultsByService[service]
+    return result ? [result] : []
+  })
+}
 
 /**
  * Keeps the service selector label compact while still reflecting the user's
@@ -669,41 +663,41 @@ export const orderResultsByServices = (
  */
 export const getSelectedServicesSummary = (services: TranslationServiceId[]): string => {
   if (services.length === 0) {
-    return "未选择服务";
+    return '未选择服务'
   }
 
-  const firstLabel = getServiceLabel(services[0]);
+  const firstLabel = getServiceLabel(services[0])
   if (services.length === 1) {
-    return firstLabel;
+    return firstLabel
   }
 
-  return `${firstLabel} +${services.length - 1}`;
-};
+  return `${firstLabel} +${services.length - 1}`
+}
 
 /**
  * Reads the user's enabled translation services and transparently migrates the
  * legacy single-select storage key on first access.
  */
 export const getSelectedServices = async (): Promise<TranslationServiceId[]> => {
-  const preferences = await loadServicePreferencesFromStorage();
-  return preferences.selectedServices;
-};
+  const preferences = await loadServicePreferencesFromStorage()
+  return preferences.selectedServices
+}
 
 /**
  * Exposes the normalized provider visibility state so all UIs can render the
  * same visible provider list and heal persisted selections automatically.
  */
 export const getTranslationServicePreferences = async (): Promise<TranslationServicePreferences> =>
-  loadServicePreferencesFromStorage();
+  loadServicePreferencesFromStorage()
 
 /**
  * Reads the persisted hidden-provider list and applies the default migration
  * that hides Tencent for existing installs the first time this code runs.
  */
 export const getHiddenServices = async (): Promise<TranslationServiceId[]> => {
-  const preferences = await loadServicePreferencesFromStorage();
-  return preferences.hiddenServices;
-};
+  const preferences = await loadServicePreferencesFromStorage()
+  return preferences.hiddenServices
+}
 
 /**
  * Persists the exact service order chosen in the UI so both popup and page
@@ -712,12 +706,12 @@ export const getHiddenServices = async (): Promise<TranslationServiceId[]> => {
 export const setSelectedServices = async (
   services: TranslationServiceId[],
 ): Promise<TranslationServiceId[]> => {
-  const hiddenServices = await getHiddenServices();
-  const normalizedServices = normalizeSelectedServices(services, hiddenServices);
-  await browser.storage.local.set({ [SELECTED_SERVICES_STORAGE_KEY]: normalizedServices });
-  await browser.storage.local.remove(LEGACY_SELECTED_SERVICE_STORAGE_KEY);
-  return normalizedServices;
-};
+  const hiddenServices = await getHiddenServices()
+  const normalizedServices = normalizeSelectedServices(services, hiddenServices)
+  await browser.storage.local.set({ [SELECTED_SERVICES_STORAGE_KEY]: normalizedServices })
+  await browser.storage.local.remove(LEGACY_SELECTED_SERVICE_STORAGE_KEY)
+  return normalizedServices
+}
 
 /**
  * Persists provider visibility rules and immediately revalidates the selected
@@ -726,47 +720,47 @@ export const setSelectedServices = async (
 export const setHiddenServices = async (
   hiddenServices: TranslationServiceId[],
 ): Promise<TranslationServicePreferences> => {
-  const normalizedHiddenServices = normalizeHiddenServices(hiddenServices);
-  const visibleServiceOptions = getVisibleTranslationServiceOptions(normalizedHiddenServices);
+  const normalizedHiddenServices = normalizeHiddenServices(hiddenServices)
+  const visibleServiceOptions = getVisibleTranslationServiceOptions(normalizedHiddenServices)
 
   if (visibleServiceOptions.length === 0) {
-    throw new Error("至少保留一个可见翻译服务");
+    throw new Error('至少保留一个可见翻译服务')
   }
 
   const result = await browser.storage.local.get([
     SELECTED_SERVICES_STORAGE_KEY,
     LEGACY_SELECTED_SERVICE_STORAGE_KEY,
-  ]);
+  ])
   const storedSelectedServices =
     SELECTED_SERVICES_STORAGE_KEY in result
       ? result.selectedServices
-      : [result[LEGACY_SELECTED_SERVICE_STORAGE_KEY]];
+      : [result[LEGACY_SELECTED_SERVICE_STORAGE_KEY]]
 
   const selectedServices = normalizeSelectedServices(
     storedSelectedServices,
     normalizedHiddenServices,
-  );
+  )
 
   await browser.storage.local.set({
     [HIDDEN_SERVICES_STORAGE_KEY]: normalizedHiddenServices,
     [SELECTED_SERVICES_STORAGE_KEY]: selectedServices,
-  });
-  await browser.storage.local.remove(LEGACY_SELECTED_SERVICE_STORAGE_KEY);
+  })
+  await browser.storage.local.remove(LEGACY_SELECTED_SERVICE_STORAGE_KEY)
 
   return {
     selectedServices,
     hiddenServices: normalizedHiddenServices,
     visibleServiceOptions,
-  };
-};
+  }
+}
 
 /**
  * 读取 Popup 翻译历史，并在发现旧数据不符合约束时自动修正存储，
  * 避免 UI 侧为脏数据重复兜底。
  */
 export const getTranslationHistory = async (): Promise<TranslationHistoryItem[]> => {
-  const result = await browser.storage.local.get([TRANSLATION_HISTORY_STORAGE_KEY]);
-  const normalizedHistory = normalizeTranslationHistory(result[TRANSLATION_HISTORY_STORAGE_KEY]);
+  const result = await browser.storage.local.get([TRANSLATION_HISTORY_STORAGE_KEY])
+  const normalizedHistory = normalizeTranslationHistory(result[TRANSLATION_HISTORY_STORAGE_KEY])
 
   if (
     !Array.isArray(result[TRANSLATION_HISTORY_STORAGE_KEY]) ||
@@ -775,11 +769,11 @@ export const getTranslationHistory = async (): Promise<TranslationHistoryItem[]>
       (item: unknown, index: number) => item !== normalizedHistory[index],
     )
   ) {
-    await browser.storage.local.set({ [TRANSLATION_HISTORY_STORAGE_KEY]: normalizedHistory });
+    await browser.storage.local.set({ [TRANSLATION_HISTORY_STORAGE_KEY]: normalizedHistory })
   }
 
-  return normalizedHistory;
-};
+  return normalizedHistory
+}
 
 /**
  * 新历史写入头部；若文本已存在则提升到第一位，并保持最多五条。
@@ -787,27 +781,27 @@ export const getTranslationHistory = async (): Promise<TranslationHistoryItem[]>
 export const addTranslationHistoryItem = async (
   text: string,
 ): Promise<TranslationHistoryItem[]> => {
-  const normalizedText = text.trim();
+  const normalizedText = text.trim()
   if (!normalizedText) {
-    return getTranslationHistory();
+    return getTranslationHistory()
   }
 
-  const currentHistory = await getTranslationHistory();
+  const currentHistory = await getTranslationHistory()
   const nextHistory = [
     normalizedText,
-    ...currentHistory.filter((item) => item !== normalizedText),
-  ].slice(0, MAX_TRANSLATION_HISTORY_ITEMS);
+    ...currentHistory.filter(item => item !== normalizedText),
+  ].slice(0, MAX_TRANSLATION_HISTORY_ITEMS)
 
-  await browser.storage.local.set({ [TRANSLATION_HISTORY_STORAGE_KEY]: nextHistory });
-  return nextHistory;
-};
+  await browser.storage.local.set({ [TRANSLATION_HISTORY_STORAGE_KEY]: nextHistory })
+  return nextHistory
+}
 
 export const detectDirection = (text: string): TranslationDirection => {
-  const cnCount = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
-  const enCount = (text.match(/[a-zA-Z]/g) || []).length;
+  const cnCount = (text.match(/[\u4e00-\u9fa5]/g) || []).length
+  const enCount = (text.match(/[a-zA-Z]/g) || []).length
 
-  return enCount > cnCount * 3 ? "zh" : "en";
-};
+  return enCount > cnCount * 3 ? 'zh' : 'en'
+}
 
 /**
  * Encapsulates a single provider request so callers can cache or retry each
@@ -819,39 +813,39 @@ export const translateWithService = async (
   targetLang?: TranslationDirection,
   signal?: AbortSignal,
 ): Promise<TranslationResultItem> => {
-  const finalDirection = targetLang || detectDirection(text);
-  const translator = translatorMap[service];
+  const finalDirection = targetLang || detectDirection(text)
+  const translator = translatorMap[service]
 
   try {
-    const translation = await translator(text, finalDirection, signal);
+    const translation = await translator(text, finalDirection, signal)
 
     if (signal?.aborted) {
-      throw createAbortError();
+      throw createAbortError()
     }
 
     return {
       service,
       serviceLabel: getServiceLabel(service),
-      status: "success",
+      status: 'success',
       translation,
-      error: "",
+      error: '',
       direction: finalDirection,
-    };
+    }
   } catch (error) {
     if (signal?.aborted || isAbortError(error)) {
-      throw error;
+      throw error
     }
 
     return {
       service,
       serviceLabel: getServiceLabel(service),
-      status: "error",
-      translation: "",
+      status: 'error',
+      translation: '',
       error: getErrorMessage(error, `${getServiceLabel(service)} 翻译失败`),
       direction: finalDirection,
-    };
+    }
   }
-};
+}
 
 /**
  * Executes all requested translators in parallel. Callers provide their own
@@ -864,53 +858,53 @@ export const translateWithServices = async (
   targetLang?: TranslationDirection,
   options?: TranslateWithServicesOptions,
 ): Promise<TranslationBatchResult> => {
-  const finalDirection = targetLang || detectDirection(text);
-  const signal = options?.signal;
-  const hiddenServices = await getHiddenServices();
+  const finalDirection = targetLang || detectDirection(text)
+  const signal = options?.signal
+  const hiddenServices = await getHiddenServices()
   const selectedServices = services
     ? filterHiddenServices(normalizeServiceIds(services), hiddenServices)
-    : await getSelectedServices();
+    : await getSelectedServices()
 
   if (selectedServices.length === 0) {
-    throw new Error("至少选择一个翻译服务");
+    throw new Error('至少选择一个翻译服务')
   }
 
   const results = await Promise.all(
-    selectedServices.map((service) => translateWithService(text, service, finalDirection, signal)),
-  );
+    selectedServices.map(service => translateWithService(text, service, finalDirection, signal)),
+  )
 
   if (signal?.aborted) {
-    throw createAbortError();
+    throw createAbortError()
   }
 
-  return { results, direction: finalDirection };
-};
+  return { results, direction: finalDirection }
+}
 
 export const translateText = async (
   text: string,
   service?: TranslationServiceId,
   targetLang?: TranslationDirection,
 ): Promise<{ translation: string; direction: TranslationDirection }> => {
-  const selectedServices = service ? [service] : await getSelectedServices();
-  const firstService = selectedServices[0];
+  const selectedServices = service ? [service] : await getSelectedServices()
+  const firstService = selectedServices[0]
 
   if (!firstService) {
-    throw new Error("至少选择一个翻译服务");
+    throw new Error('至少选择一个翻译服务')
   }
 
-  const batchResult = await translateWithServices(text, [firstService], targetLang);
-  const firstResult = batchResult.results[0];
+  const batchResult = await translateWithServices(text, [firstService], targetLang)
+  const firstResult = batchResult.results[0]
 
   if (!firstResult) {
-    throw new Error("未返回翻译结果");
+    throw new Error('未返回翻译结果')
   }
 
-  if (firstResult.status === "error") {
-    throw new Error(firstResult.error || "翻译失败");
+  if (firstResult.status === 'error') {
+    throw new Error(firstResult.error || '翻译失败')
   }
 
   return {
     translation: firstResult.translation,
     direction: batchResult.direction,
-  };
-};
+  }
+}

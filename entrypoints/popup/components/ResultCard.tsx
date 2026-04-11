@@ -5,21 +5,21 @@ import {
   RetryIcon,
   SpeakerIcon,
   StopIcon,
-} from "../../components/icons";
+} from '../../components/icons'
 import {
   getServiceLabel,
   type TranslationResultItem,
   type TranslationServiceId,
-} from "../../../utils/translation";
+} from '../../../utils/translation'
 
 interface ResultCardProps {
-  result?: TranslationResultItem;
-  service: TranslationServiceId;
-  copiedService: TranslationServiceId | null;
-  speakingService: TranslationServiceId | null;
-  onRetry: (service: TranslationServiceId) => void;
-  onCopy: (service: TranslationServiceId, text: string) => void;
-  onSpeak: (result: TranslationResultItem) => void;
+  result?: TranslationResultItem
+  service: TranslationServiceId
+  copiedService: TranslationServiceId | null
+  speakingService: TranslationServiceId | null
+  onRetry: (service: TranslationServiceId) => void
+  onCopy: (service: TranslationServiceId, text: string) => void
+  onSpeak: (result: TranslationResultItem) => void
 }
 
 export const ResultCard = ({
@@ -47,7 +47,7 @@ export const ResultCard = ({
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -60,7 +60,7 @@ export const ResultCard = ({
             </div>
           </div>
           <div className="flex gap-1">
-            {result.status === "error" ? (
+            {result.status === 'error' ? (
               <button
                 className="btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0"
                 onClick={() => onRetry(result.service)}
@@ -72,11 +72,11 @@ export const ResultCard = ({
               <>
                 <button
                   className={`btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0 ${
-                    speakingService === result.service ? "text-primary" : ""
+                    speakingService === result.service ? 'text-primary' : ''
                   }`}
                   onClick={() => onSpeak(result)}
-                  title={speakingService === result.service ? "停止朗读" : "朗读"}
-                  disabled={result.status !== "success"}
+                  title={speakingService === result.service ? '停止朗读' : '朗读'}
+                  disabled={result.status !== 'success'}
                 >
                   {speakingService === result.service ? (
                     <StopIcon className="h-3 w-3" />
@@ -88,7 +88,7 @@ export const ResultCard = ({
                   className="btn btn-ghost btn-xs btn-circle min-h-0 h-6 w-6 p-0"
                   onClick={() => onCopy(result.service, result.translation)}
                   title="复制"
-                  disabled={result.status !== "success"}
+                  disabled={result.status !== 'success'}
                 >
                   {copiedService === result.service ? (
                     <CheckIcon className="h-3 w-3 text-green-500 shrink-0" />
@@ -101,15 +101,15 @@ export const ResultCard = ({
           </div>
         </div>
 
-        {result.status === "success" ? (
+        {result.status === 'success' ? (
           <p className="text-sm whitespace-pre-wrap">{result.translation}</p>
         ) : (
           <div className="alert alert-error alert-soft py-1">
             <ErrorIcon className="stroke-current shrink-0 h-4 w-4" />
-            <span className="text-sm">😟 {result.error}</span>
+            <span className="text-xs">{result.error}</span>
           </div>
         )}
       </div>
     </div>
-  );
-};
+  )
+}

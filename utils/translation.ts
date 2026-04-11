@@ -362,7 +362,7 @@ const translateWithGoogle = async (
 
   logger.log('正在请求Google翻译API:', url)
 
-  const apiKey = import.meta.env?.WXT_GOOGLE_HTML_API_KEY || getApiKey()
+  const apiKey = getApiKey()
 
   const response = await fetch(url, {
     method: 'POST',

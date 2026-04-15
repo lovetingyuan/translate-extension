@@ -71,6 +71,33 @@ interface HtmlTextSegment {
   trailingWhitespace: string
 }
 
+const escapeHtmlText = (value: string): string =>
+  value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+
+/**
+ * Google currently uses its HTML translation endpoint for both plain-text and
+ * rich-text requests. Encoding meaningful plain-text whitespace as HTML keeps
+ * the endpoint from collapsing intentional blank lines or repeated spaces.
+ */
+const convertPlainTextToHtmlWithPreservedWhitespace = (value: string): string =>
+  escapeHtmlText(value.replace(/\r\n?/gu, '\n'))
+    .split('\n')
+    .map(line =>
+      line.replace(/ +/gu, (spaces, offset, sourceLine) => {
+        const runEnd = offset + spaces.length
+        const isLeading = offset === 0
+        const isTrailing = runEnd === sourceLine.length
+        const isRepeated = spaces.length > 1
+
+        if (!isLeading && !isTrailing && !isRepeated) {
+          return spaces
+        }
+
+        return '&nbsp;'.repeat(spaces.length)
+      }),
+    )
+    .join('<br>')
+
 /**
  * OpenRouter does not offer native HTML-preserving translation controls like
  * DeepL, so rich-text requests need an explicit contract that keeps tags
@@ -83,7 +110,7 @@ const buildOpenRouterSystemPrompt = (
   if (richHtmlSource) {
     return `Translate the content within <source_html> tags into ${languageName}.
 Rules:
-1. Preserve the original HTML structure exactly, including element order, nesting, attributes, entities, and line breaks.
+1. Preserve the original HTML structure exactly, including element order, nesting, attributes, entities, spaces, and line breaks.
 2. Translate only the human-readable text nodes.
 3. Do not add, remove, or rename any HTML tags.
 4. Return ONLY the translated HTML. Do not wrap it in Markdown, code fences, or explanations.`
@@ -93,7 +120,8 @@ Rules:
 Rules:
 1. Ensure the translation is natural, fluent, and uses common native expressions.
 2. Output ONLY the translation. No any extra content.
-3. Try to preserve original formatting.`
+3. Preserve spaces and line breaks exactly.
+4. Try to preserve the original formatting.`
 }
 
 const buildOpenRouterUserPrompt = (
@@ -269,6 +297,30 @@ export const createTranslationProviders = (
   const translateWithGoogle: TranslatorFunction = async (source, targetLang, signal) => {
     const requestBody = resolveSourceRequestBody(source)
     const richHtmlSource = resolveRichHtmlSource(source)
+    const plainTextSource = resolveSourcePlainText(source)
+    const newlineAwarePlainHtmlSource =
+      !richHtmlSource && /[ \r\n]/u.test(plainTextSource)
+        ? convertPlainTextToHtmlWithPreservedWhitespace(plainTextSource)
+        : null
+
+    if (newlineAwarePlainHtmlSource) {
+      const translation = await requestGoogleTranslation(
+        newlineAwarePlainHtmlSource,
+        targetLang,
+        signal,
+      )
+
+      if (hasMeaningfulHtml(translation)) {
+        return buildPlainResult(stripHtmlToPlainText(translation))
+      }
+
+      const reconstructed = await reconstructHtmlTranslation(newlineAwarePlainHtmlSource, text =>
+        requestGoogleTranslation(text, targetLang, signal),
+      )
+
+      return buildPlainResult(reconstructed.translation)
+    }
+
     const translation = await requestGoogleTranslation(requestBody, targetLang, signal)
 
     if (richHtmlSource && hasMeaningfulHtml(translation)) {

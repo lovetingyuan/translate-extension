@@ -11,6 +11,7 @@ import {
   type TranslationResultItem,
   type TranslationServiceId,
 } from '../../../utils/translation'
+import { RichTextContent } from './RichTextContent'
 
 interface ResultCardProps {
   result?: TranslationResultItem
@@ -102,7 +103,11 @@ export const ResultCard = ({
         </div>
 
         {result.status === 'success' ? (
-          <p className="text-sm whitespace-pre-wrap">{result.translation}</p>
+          <RichTextContent
+            format={result.contentFormat === 'html' ? 'html' : 'plain'}
+            html={result.translationHtml}
+            text={result.translation}
+          />
         ) : (
           <div className="alert alert-error alert-soft py-1">
             <ErrorIcon className="stroke-current shrink-0 h-4 w-4" />

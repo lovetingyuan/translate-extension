@@ -90,6 +90,76 @@ describe('createTranslationProviders', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
+  it('preserves blank lines for google plain-text translations by translating newline-aware html', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (_input, init) => {
+        const parsedBody = JSON.parse(String(init?.body)) as [[[string], string, string], string]
+        const requestText = parsedBody[0][0][0]
+
+        if (requestText === 'First\n\nSecond') {
+          return new Response(JSON.stringify([['第一段 第二段']]), { status: 200 })
+        }
+
+        if (requestText === 'First<br><br>Second') {
+          return new Response(JSON.stringify([['第一段 第二段']]), { status: 200 })
+        }
+
+        if (requestText === 'First') {
+          return new Response(JSON.stringify([['第一段']]), { status: 200 })
+        }
+
+        if (requestText === 'Second') {
+          return new Response(JSON.stringify([['第二段']]), { status: 200 })
+        }
+
+        throw new Error(`Unexpected request text: ${requestText}`)
+      })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const providers = createTranslationProviders(runtimeConfig)
+    const result = await providers.google('First\n\nSecond', 'zh')
+
+    expect(result.contentFormat).toBe('plain')
+    expect(result.translation).toBe('第一段\n\n第二段')
+  })
+
+  it('preserves repeated spaces for google plain-text translations', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (_input, init) => {
+        const parsedBody = JSON.parse(String(init?.body)) as [[[string], string, string], string]
+        const requestText = parsedBody[0][0][0]
+
+        if (requestText === 'Alpha  Beta') {
+          return new Response(JSON.stringify([['甲 乙']]), { status: 200 })
+        }
+
+        if (requestText === 'Alpha&nbsp;&nbsp;Beta') {
+          return new Response(JSON.stringify([['甲&nbsp;&nbsp;乙']]), { status: 200 })
+        }
+
+        if (requestText === 'Alpha') {
+          return new Response(JSON.stringify([['甲']]), { status: 200 })
+        }
+
+        if (requestText === 'Beta') {
+          return new Response(JSON.stringify([['乙']]), { status: 200 })
+        }
+
+        throw new Error(`Unexpected request text: ${requestText}`)
+      })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const providers = createTranslationProviders(runtimeConfig)
+    const result = await providers.google('Alpha  Beta', 'zh')
+
+    expect(result.contentFormat).toBe('plain')
+    expect(result.translation).toBe('甲  乙')
+  })
+
   it('sends DeepL rich-text requests with html tag handling v2', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(
@@ -157,12 +227,47 @@ describe('createTranslationProviders', () => {
 
     expect(parsedBody.messages).toHaveLength(2)
     expect(parsedBody.messages[0]?.content).toContain('Preserve the original HTML structure exactly')
+    expect(parsedBody.messages[0]?.content).toContain(
+      'including element order, nesting, attributes, entities, spaces, and line breaks',
+    )
     expect(parsedBody.messages[0]?.content).toContain('Translate only the human-readable text nodes')
     expect(parsedBody.messages[1]?.content).toContain('<source_html>')
     expect(parsedBody.messages[1]?.content).toContain('<p>Hello <strong>world</strong></p>')
     expect(result.contentFormat).toBe('html')
     expect(result.translationHtml).toBe('<p>你好 <strong>世界</strong></p>')
     expect(result.translation).toBe('你好 世界')
+  })
+
+  it('sends OpenRouter plain-text prompts that explicitly preserve spaces and line breaks', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: '甲  乙\n\n丙' } }],
+        }),
+        { status: 200 },
+      ),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const providers = createTranslationProviders({
+      ...runtimeConfig,
+      getOpenRouterApiKey: async () => 'test-openrouter-key',
+    })
+
+    const result = await providers.openrouter('Alpha  Beta\n\nGamma', 'zh')
+
+    const request = fetchMock.mock.calls[0]?.[1]
+    const parsedBody = JSON.parse(String(request?.body)) as {
+      messages: Array<{ content: string; role: string }>
+    }
+
+    expect(parsedBody.messages).toHaveLength(2)
+    expect(parsedBody.messages[0]?.content).toContain('Preserve spaces and line breaks exactly')
+    expect(parsedBody.messages[1]?.content).toContain('<source_text>')
+    expect(parsedBody.messages[1]?.content).toContain('Alpha  Beta\n\nGamma')
+    expect(result.contentFormat).toBe('plain')
+    expect(result.translation).toBe('甲  乙\n\n丙')
   })
 })
 

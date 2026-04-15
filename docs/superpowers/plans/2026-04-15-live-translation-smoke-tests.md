@@ -146,7 +146,7 @@ git commit -m "refactor: extract shared translation providers"
 - [ ] **Step 1: Write the failing tests for all providers**
 
 ```ts
-for (const service of ['google', 'microsoft', 'tencent', 'deepl', 'openrouter'] as const) {
+for (const service of ['google', 'microsoft', 'deepl', 'openrouter'] as const) {
   it(`${service} translates apple to 苹果`, async () => {
     const result = await runTranslationSmokeTest(service)
     expect(result).toBe('苹果')

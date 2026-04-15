@@ -178,56 +178,6 @@ export const createTranslationProviders = (
     throw new Error('Microsoft翻译返回数据格式错误')
   }
 
-  const translateWithTencent: TranslatorFunction = async (text, targetLang, signal) => {
-    const url = 'https://transmart.qq.com/api/imt'
-
-    runtimeConfig.logger.log('正在请求Tencent翻译API:', url)
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: buildBrowserLikeHeaders(runtimeConfig, {
-        'Content-Type': 'application/json',
-        accept: 'application/json, text/plain, */*',
-        origin: 'https://transmart.qq.com',
-        Referer: 'https://transmart.qq.com/zh-CN/index',
-      }),
-      body: JSON.stringify({
-        header: {
-          fn: 'auto_translation',
-          client_key:
-            'browser-chrome-110.0.0-Mac OS-df4bd4c5-a65d-44b2-a40f-42f34f3535f2-1677486696487',
-        },
-        type: 'plain',
-        model_category: 'normal',
-        source: {
-          text_list: [text],
-          lang: 'auto',
-        },
-        target: {
-          lang: targetLang,
-        },
-      }),
-      signal,
-    })
-
-    runtimeConfig.logger.log('Tencent翻译API响应状态:', response.status, response.statusText)
-
-    if (!response.ok) {
-      const errorText = await readResponseTextSafely(response)
-      runtimeConfig.logger.error('Tencent翻译API错误响应:', errorText)
-      throw new Error(`Tencent翻译请求失败: ${response.status}`)
-    }
-
-    const data = (await response.json()) as { auto_translation?: unknown }
-    runtimeConfig.logger.log('Tencent翻译API返回数据:', data)
-
-    if (Array.isArray(data.auto_translation) && typeof data.auto_translation[0] === 'string') {
-      return data.auto_translation[0]
-    }
-
-    throw new Error('Tencent翻译返回数据格式错误')
-  }
-
   const translateWithDeepL: TranslatorFunction = async (text, targetLang, signal) => {
     const apiKey = await runtimeConfig.getDeepLApiKey()
 
@@ -340,7 +290,6 @@ Rules:
   return {
     google: translateWithGoogle,
     microsoft: translateWithMicrosoft,
-    tencent: translateWithTencent,
     deepl: translateWithDeepL,
     openrouter: translateWithOpenRouter,
   }

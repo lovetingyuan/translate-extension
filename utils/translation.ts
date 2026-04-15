@@ -8,7 +8,6 @@ import {
 export const TRANSLATION_SERVICE_IDS = [
   'google',
   'microsoft',
-  'tencent',
   'deepl',
   'openrouter',
 ] as const
@@ -66,7 +65,7 @@ export type TranslatorFunction = (
 ) => Promise<string>
 
 const DEFAULT_SELECTED_SERVICES: TranslationServiceId[] = ['google']
-const DEFAULT_HIDDEN_SERVICES: TranslationServiceId[] = ['tencent']
+const DEFAULT_HIDDEN_SERVICES: TranslationServiceId[] = []
 const EXPIRATION_BUFFER_MS = 1000
 const SELECTED_SERVICES_STORAGE_KEY = 'selectedServices'
 const LEGACY_SELECTED_SERVICE_STORAGE_KEY = 'selectedService'
@@ -77,7 +76,6 @@ const MAX_TRANSLATION_HISTORY_ITEMS = 5
 export const TRANSLATION_SERVICE_OPTIONS: TranslationServiceOption[] = [
   { id: 'google', label: 'Google' },
   { id: 'microsoft', label: 'Microsoft' },
-  { id: 'tencent', label: '腾讯翻译' },
   { id: 'deepl', label: 'DeepL' },
   { id: 'openrouter', label: 'OpenRouter' },
 ]
@@ -85,7 +83,6 @@ export const TRANSLATION_SERVICE_OPTIONS: TranslationServiceOption[] = [
 const TRANSLATION_SERVICE_LABELS: Record<TranslationServiceId, string> = {
   google: 'Google',
   microsoft: 'Microsoft',
-  tencent: '腾讯翻译',
   deepl: 'DeepL',
   openrouter: 'OpenRouter',
 }
@@ -422,8 +419,8 @@ export const getTranslationServicePreferences = async (): Promise<TranslationSer
   loadServicePreferencesFromStorage()
 
 /**
- * Reads the persisted hidden-provider list and applies the default migration
- * that hides Tencent for existing installs the first time this code runs.
+ * Reads the persisted hidden-provider list and normalizes it against the
+ * currently supported providers so stale ids disappear automatically.
  */
 export const getHiddenServices = async (): Promise<TranslationServiceId[]> => {
   const preferences = await loadServicePreferencesFromStorage()

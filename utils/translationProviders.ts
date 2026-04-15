@@ -335,7 +335,7 @@ export const createTranslationProviders = (
     const richHtmlSource = resolveRichHtmlSource(source)
 
     if (!apiKey) {
-      throw new Error('DeepL API Key 未配置，请先在设置中填写')
+      throw new Error('DeepL API Key 未配置，请先输入并保存')
     }
 
     const deeplTargetLang = targetLang === 'zh' ? 'ZH' : 'EN'
@@ -393,7 +393,7 @@ export const createTranslationProviders = (
     const richHtmlSource = resolveRichHtmlSource(source)
 
     if (!apiKey) {
-      throw new Error('OpenRouter API Key 未配置，请点击右上角设置')
+      throw new Error('OpenRouter API Key 未配置，请先输入并保存')
     }
 
     const url = 'https://openrouter.ai/api/v1/chat/completions'

@@ -4,6 +4,12 @@ import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { browser } from "wxt/browser";
 import iconSvg from "../../assets/icon.svg?raw";
 import { decodeResults } from "../../utils/decode";
+import {
+  getInlineApiKeyPrompt,
+  saveInlineApiKeyAndRetry,
+  type InlineApiKeyPrompt,
+  type InlineApiKeyService,
+} from "../../utils/inlineApiKey";
 import { sanitizeRichTextHtml } from "../../utils/richTextDom";
 import type { TranslationSourcePayload } from "../../utils/richText";
 import {
@@ -32,6 +38,12 @@ interface TranslateDialogResponse {
 }
 
 type DialogStatus = "loading" | "success" | "error";
+
+interface InlineApiKeyFormState {
+  errorMessage: string;
+  saving: boolean;
+  value: string;
+}
 
 const renderStrokeIcon = (
   paths: ReturnType<typeof svg>,
@@ -703,6 +715,74 @@ const dialogStyles = css`
     flex-shrink: 0;
   }
 
+  .inline-key-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .inline-key-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .inline-key-input {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    padding: 0 12px;
+    outline: none;
+  }
+
+  .inline-key-input::placeholder {
+    color: var(--sub);
+  }
+
+  .inline-key-input:focus {
+    border-color: var(--active);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.16);
+  }
+
+  .inline-key-save {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--active);
+    background: var(--active);
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .inline-key-save:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .inline-key-save:not(:disabled):hover {
+    filter: brightness(1.05);
+  }
+
+  .inline-key-error {
+    color: var(--error);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .inline-key-link {
+    color: var(--active);
+    text-decoration: underline;
+  }
+
   .status-row {
     display: flex;
     align-items: center;
@@ -779,6 +859,7 @@ class TranslationDialogView {
   private translationBatchVersion = 0;
   private retryRequestSequence = 0;
   private retryRequestVersions: Partial<Record<TranslationServiceId, number>> = {};
+  private inlineApiKeyForms: Partial<Record<InlineApiKeyService, InlineApiKeyFormState>> = {};
   private activeDragMoveHandler: ((event: MouseEvent) => void) | null = null;
   private activeDragUpHandler: (() => void) | null = null;
   private originalTextHeight = 120; // 原文区域高度
@@ -1089,6 +1170,123 @@ class TranslationDialogView {
     this.syncVisibleResults();
   }
 
+  private getInlineApiKeyFormState(service: InlineApiKeyService): InlineApiKeyFormState {
+    return (
+      this.inlineApiKeyForms[service] ?? {
+        errorMessage: "",
+        saving: false,
+        value: "",
+      }
+    );
+  }
+
+  private setInlineApiKeyFormState(
+    service: InlineApiKeyService,
+    nextState: Partial<InlineApiKeyFormState>,
+  ): void {
+    this.inlineApiKeyForms = {
+      ...this.inlineApiKeyForms,
+      [service]: {
+        ...this.getInlineApiKeyFormState(service),
+        ...nextState,
+      },
+    };
+  }
+
+  private handleInlineApiKeyInput(service: InlineApiKeyService, value: string): void {
+    this.setInlineApiKeyFormState(service, {
+      errorMessage: "",
+      value,
+    });
+    this.renderView();
+  }
+
+  private async handleInlineApiKeySave(service: InlineApiKeyService): Promise<void> {
+    const currentState = this.getInlineApiKeyFormState(service);
+    if (currentState.saving) {
+      return;
+    }
+
+    this.setInlineApiKeyFormState(service, {
+      errorMessage: "",
+      saving: true,
+    });
+    this.renderView();
+
+    try {
+      await saveInlineApiKeyAndRetry({
+        service,
+        value: currentState.value,
+        storage: browser.storage.local,
+        retry: async (retryService) => {
+          await this.handleRetryService(retryService);
+        },
+      });
+
+      this.setInlineApiKeyFormState(service, {
+        errorMessage: "",
+        saving: false,
+        value: currentState.value.trim(),
+      });
+    } catch (error: unknown) {
+      this.setInlineApiKeyFormState(service, {
+        errorMessage: error instanceof Error ? error.message : "保存设置失败",
+        saving: false,
+      });
+      this.renderView();
+    }
+  }
+
+  private renderInlineApiKeyForm(prompt: InlineApiKeyPrompt) {
+    const formState = this.getInlineApiKeyFormState(prompt.service);
+    const isSaveDisabled = formState.saving || formState.value.trim().length === 0;
+
+    return html`
+      <div class="inline-key-form">
+        <div class="error-state">
+          ${renderErrorIcon()}
+          <span>
+            需要先输入 API Key，保存后会自动重试当前翻译服务。
+            <a
+              class="inline-key-link"
+              href=${prompt.keyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              >获取 Key ↗</a
+            >
+          </span>
+        </div>
+        <div class="inline-key-controls">
+          <input
+            class="inline-key-input"
+            type="text"
+            placeholder=${prompt.placeholder}
+            .value=${formState.value}
+            @input=${(event: InputEvent) => {
+              const target = event.target;
+              if (target instanceof HTMLInputElement) {
+                this.handleInlineApiKeyInput(prompt.service, target.value);
+              }
+            }}
+          />
+          <button
+            class="inline-key-save"
+            type="button"
+            ?disabled=${isSaveDisabled}
+            @click=${() => {
+              void this.handleInlineApiKeySave(prompt.service);
+            }}
+          >
+            ${formState.saving ? "保存中..." : prompt.saveButtonText}
+          </button>
+        </div>
+        ${formState.errorMessage
+          ? html`<div class="inline-key-error">${formState.errorMessage}</div>`
+          : null}
+      </div>
+    `;
+  }
+
   private renderRichTextContent(
     plainText: string,
     htmlContent: string,
@@ -1313,6 +1511,8 @@ class TranslationDialogView {
 
       const canInteract = result.status === "success";
       const speaking = this.readingResultService === result.service;
+      const inlineApiKeyPrompt =
+        result.status === "error" ? getInlineApiKeyPrompt(result.service, result.error) : null;
 
       return html`
         <article class="result-card">
@@ -1372,7 +1572,9 @@ class TranslationDialogView {
                 result.contentFormat === "html" ? "html" : "plain",
                 "result-text",
               )
-            : html`
+            : inlineApiKeyPrompt
+              ? this.renderInlineApiKeyForm(inlineApiKeyPrompt)
+              : html`
                 <div class="error-state">
                   ${renderErrorIcon()}
                   <span>${result.error}</span>

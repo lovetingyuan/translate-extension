@@ -269,7 +269,6 @@ async function main() {
 
     runCommand('npm', ['version', version, '--no-git-tag-version'])
     runCommand('npm', ['run', 'zip'])
-    runCommand('npm', ['run', 'zip:firefox'])
 
     runCommand('git', ['add', 'package.json', 'package-lock.json'])
     runCommand('git', ['commit', '-m', `chore(release): ${tagName}`])

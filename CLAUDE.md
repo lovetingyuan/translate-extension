@@ -20,8 +20,7 @@ npm run build            # Chrome/Edge
 npm run build:firefox    # Firefox
 
 # 打包为 zip
-npm run zip              # Chrome/Edge
-npm run zip:firefox      # Firefox
+npm run zip              # Chrome/Edge + Firefox
 
 # 类型检查
 npm run compile          # TypeScript 类型检查 (不生成文件)

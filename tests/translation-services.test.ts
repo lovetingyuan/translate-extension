@@ -19,12 +19,14 @@ describe('translation services smoke tests', () => {
 })
 
 describe('zip commands', () => {
-  it('run translation smoke tests before packaging', async () => {
+  it('run translation smoke tests before packaging chrome and firefox bundles', async () => {
     const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')) as {
       scripts?: Record<string, string>
     }
 
     expect(packageJson.scripts?.zip).toContain('npm run test')
-    expect(packageJson.scripts?.['zip:firefox']).toContain('npm run test')
+    expect(packageJson.scripts?.zip).toContain('wxt zip')
+    expect(packageJson.scripts?.zip).toContain('wxt zip -b firefox')
+    expect(packageJson.scripts?.['zip:firefox']).toBeUndefined()
   })
 })

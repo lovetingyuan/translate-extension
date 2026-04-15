@@ -38,7 +38,7 @@ OpenRouter 的 smoke test 固定使用 `openrouter/free` 模型。
 npm test
 ```
 
-`npm run zip` 和 `npm run zip:firefox` 现在都会先执行这组 smoke test，只有测试通过后才会继续打包。
+`npm run zip` 会先执行这组 smoke test，只有测试通过后才会继续同时打包默认浏览器和 Firefox。
 
 ## 📄 License
 

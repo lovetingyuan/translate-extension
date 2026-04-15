@@ -127,6 +127,43 @@ describe('createTranslationProviders', () => {
     expect(result.contentFormat).toBe('html')
     expect(result.translationHtml).toBe('<p>你好 <strong>世界</strong></p>')
   })
+
+  it('sends OpenRouter rich-text prompts that preserve html formatting', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: '<p>你好 <strong>世界</strong></p>' } }],
+        }),
+        { status: 200 },
+      ),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const providers = createTranslationProviders({
+      ...runtimeConfig,
+      getOpenRouterApiKey: async () => 'test-openrouter-key',
+    })
+
+    const result = await providers.openrouter(
+      createHtmlSource('Hello world', '<p>Hello <strong>world</strong></p>'),
+      'zh',
+    )
+
+    const request = fetchMock.mock.calls[0]?.[1]
+    const parsedBody = JSON.parse(String(request?.body)) as {
+      messages: Array<{ content: string; role: string }>
+    }
+
+    expect(parsedBody.messages).toHaveLength(2)
+    expect(parsedBody.messages[0]?.content).toContain('Preserve the original HTML structure exactly')
+    expect(parsedBody.messages[0]?.content).toContain('Translate only the human-readable text nodes')
+    expect(parsedBody.messages[1]?.content).toContain('<source_html>')
+    expect(parsedBody.messages[1]?.content).toContain('<p>Hello <strong>world</strong></p>')
+    expect(result.contentFormat).toBe('html')
+    expect(result.translationHtml).toBe('<p>你好 <strong>世界</strong></p>')
+    expect(result.translation).toBe('你好 世界')
+  })
 })
 
 describe('chooseSelectionSource', () => {

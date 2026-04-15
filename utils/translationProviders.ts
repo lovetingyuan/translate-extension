@@ -71,6 +71,49 @@ interface HtmlTextSegment {
   trailingWhitespace: string
 }
 
+/**
+ * OpenRouter does not offer native HTML-preserving translation controls like
+ * DeepL, so rich-text requests need an explicit contract that keeps tags
+ * stable while only translating user-visible text nodes.
+ */
+const buildOpenRouterSystemPrompt = (
+  languageName: string,
+  richHtmlSource: boolean,
+): string => {
+  if (richHtmlSource) {
+    return `Translate the content within <source_html> tags into ${languageName}.
+Rules:
+1. Preserve the original HTML structure exactly, including element order, nesting, attributes, entities, and line breaks.
+2. Translate only the human-readable text nodes.
+3. Do not add, remove, or rename any HTML tags.
+4. Return ONLY the translated HTML. Do not wrap it in Markdown, code fences, or explanations.`
+  }
+
+  return `Translate the content within <source_text> tags into ${languageName}.
+Rules:
+1. Ensure the translation is natural, fluent, and uses common native expressions.
+2. Output ONLY the translation. No any extra content.
+3. Try to preserve original formatting.`
+}
+
+const buildOpenRouterUserPrompt = (
+  source: string | TranslationSourcePayload,
+  languageName: string,
+  richHtmlSource: string | null,
+): string => {
+  if (richHtmlSource) {
+    return `Translate the content inside <source_html> to ${languageName}:
+<source_html>
+${richHtmlSource}
+</source_html>`
+  }
+
+  return `Translate the content inside <source_text> to ${languageName}:
+<source_text>
+${resolveSourcePlainText(source)}
+</source_text>`
+}
+
 const readResponseTextSafely = async (response: Response): Promise<string> => {
   try {
     return await response.text()
@@ -347,6 +390,7 @@ export const createTranslationProviders = (
   const translateWithOpenRouter: TranslatorFunction = async (source, targetLang, signal) => {
     const apiKey = await runtimeConfig.getOpenRouterApiKey()
     const model = (await runtimeConfig.getOpenRouterModel()) || DEFAULT_OPENROUTER_MODEL
+    const richHtmlSource = resolveRichHtmlSource(source)
 
     if (!apiKey) {
       throw new Error('OpenRouter API Key 未配置，请点击右上角设置')
@@ -354,11 +398,7 @@ export const createTranslationProviders = (
 
     const url = 'https://openrouter.ai/api/v1/chat/completions'
     const languageName = targetLang === 'zh' ? 'Chinese' : 'English'
-    const systemPrompt = `Translate the content within <source_text> tags into ${languageName}.
-Rules:
-1. Ensure the translation is natural, fluent, and uses common native expressions.
-2. Output ONLY the translation. No any extra content.
-3. Try to preserve original formatting.`
+    const systemPrompt = buildOpenRouterSystemPrompt(languageName, Boolean(richHtmlSource))
 
     runtimeConfig.logger.log('正在请求OpenRouter翻译API:', url, 'Model:', model)
 
@@ -380,7 +420,7 @@ Rules:
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Translate the content inside <source_text> to ${languageName}:\n<source_text>\n${resolveSourcePlainText(source)}\n</source_text>`,
+            content: buildOpenRouterUserPrompt(source, languageName, richHtmlSource),
           },
         ],
       }),
@@ -400,7 +440,9 @@ Rules:
 
     const content = data.choices?.[0]?.message?.content
     if (typeof content === 'string') {
-      return buildPlainResult(content)
+      return richHtmlSource && hasMeaningfulHtml(content)
+        ? buildHtmlResult(content)
+        : buildPlainResult(richHtmlSource ? stripHtmlToPlainText(content) : content)
     }
 
     throw new Error('OpenRouter翻译返回数据格式错误')
